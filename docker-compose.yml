@@ -1,0 +1,49 @@
+# # =====================================================================
+# # Dockerized backend + MySQL (bonus).
+# #
+# #   docker compose up --build
+# #
+# # The DB auto-loads database/schema.sql on first boot via the
+# # docker-entrypoint-initdb.d mount. Seed afterwards with:
+# #   docker compose exec backend npm run seed
+# # =====================================================================
+# services:
+#   db:
+#     image: mysql:8.0
+#     restart: unless-stopped
+#     environment:
+#       MYSQL_ROOT_PASSWORD: rootpass
+#       MYSQL_DATABASE: task_tracker
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - db_data:/var/lib/mysql
+#       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 10
+
+#   backend:
+#     build: ./backend
+#     restart: unless-stopped
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     environment:
+#       PORT: 5000
+#       NODE_ENV: production
+#       DB_HOST: db
+#       DB_PORT: 3306
+#       DB_USER: root
+#       DB_PASSWORD: rootpass
+#       DB_NAME: task_tracker
+#       JWT_SECRET: change_me_in_production
+#       JWT_EXPIRES_IN: 1d
+#       CLIENT_URL: http://localhost:5173
+#     ports:
+#       - "5000:5000"
+
+# volumes:
+#   db_data:

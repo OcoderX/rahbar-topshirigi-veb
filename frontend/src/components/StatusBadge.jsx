@@ -1,7 +1,7 @@
 const LABELS = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  completed: 'Completed',
+  pending: 'Kutilmoqda',
+  in_progress: 'Jarayonda',
+  completed: 'Bajarildi',
 };
 
 export default function StatusBadge({ status }) {

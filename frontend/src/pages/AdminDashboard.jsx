@@ -87,10 +87,10 @@ export default function AdminDashboard() {
   async function handleSubmit(payload) {
     if (editing) {
       await taskApi.update(editing.id, payload);
-      push('Task updated');
+      push('Vazifa yangilandi');
     } else {
       await taskApi.create(payload);
-      push('Task created');
+      push('Yangi vazifa yaratildi');
     }
     setModalOpen(false);
     setEditing(null);
@@ -103,11 +103,11 @@ export default function AdminDashboard() {
       <div className="container page">
         <header className="page-head">
           <div>
-            <h1>Admin Dashboard</h1>
-            <p className="lede">Manage your team and assign work.</p>
+            <h1>Admin paneli</h1>
+            <p className="lede">Jamoangizni boshqaring va yangi vazifalarni biriktiring.</p>
           </div>
           <button className="btn btn-primary" onClick={openCreate}>
-            + New Task
+            + Yangi vazifa
           </button>
         </header>
 
@@ -117,50 +117,50 @@ export default function AdminDashboard() {
         <div className="stats">
           <div className="card stat">
             <div className="n">{employees.length}</div>
-            <div className="l">Employees</div>
+            <div className="l">Xodimlar</div>
             <div className="bar"><i style={{ width: '100%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{total}</div>
-            <div className="l">Total tasks</div>
+            <div className="l">Jami vazifalar</div>
             <div className="bar"><i style={{ width: '100%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{stats.byStatus.in_progress || 0}</div>
-            <div className="l">In progress (this page)</div>
+            <div className="l">Jarayonda (ushbu sahifada)</div>
             <div className="bar"><i style={{ width: '60%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{stats.byStatus.completed || 0}</div>
-            <div className="l">Completed (this page)</div>
+            <div className="l">Bajarilgan (ushbu sahifada)</div>
             <div className="bar"><i style={{ width: '40%' }} /></div>
           </div>
         </div>
 
         {/* Filters */}
         <div className="card card-pad">
-          <div className="section-title">All Tasks</div>
+          <div className="section-title">Barcha vazifalar</div>
           <div className="filters">
             <div className="field">
-              <label>Status</label>
+              <label>Holati</label>
               <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value="">Barcha holatlar</option>
+                <option value="pending">Kutilmoqda</option>
+                <option value="in_progress">Jarayonda</option>
+                <option value="completed">Bajarildi</option>
               </select>
             </div>
             <div className="field">
-              <label>Due before</label>
+              <label>Muddatigacha</label>
               <input type="date" className="input" value={dueBefore} onChange={(e) => setDueBefore(e.target.value)} />
             </div>
             <div className="field">
-              <label>Sort by</label>
+              <label>Saralash</label>
               <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="created_at">Newest</option>
-                <option value="due_date">Due date</option>
-                <option value="status">Status</option>
-                <option value="title">Title</option>
+                <option value="created_at">Eng yangilar</option>
+                <option value="due_date">Muddati bo‘yicha</option>
+                <option value="status">Holati bo‘yicha</option>
+                <option value="title">Sarlavha bo‘yicha</option>
               </select>
             </div>
             {(statusFilter || dueBefore) && (
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
                   setDueBefore('');
                 }}
               >
-                Clear filters
+                Filtrlarni tozalash
               </button>
             )}
           </div>
@@ -180,11 +180,11 @@ export default function AdminDashboard() {
             <table className="tasks">
               <thead>
                 <tr>
-                  <th>Task</th>
-                  <th>Assigned to</th>
-                  <th>Status</th>
-                  <th>Due date</th>
-                  <th className="right">Action</th>
+                  <th>Vazifa</th>
+                  <th>Biriktirilgan</th>
+                  <th>Holati</th>
+                  <th>Bajarish muddati</th>
+                  <th className="right">Amal</th>
                 </tr>
               </thead>
               <tbody>
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                   <tr>
                     <td colSpan={5}>
                       <div className="center-screen" style={{ height: 120 }}>
-                        <span className="spinner" /> Loading tasks…
+                        <span className="spinner" /> Vazifalar yuklanmoqda…
                       </div>
                     </td>
                   </tr>
@@ -200,8 +200,8 @@ export default function AdminDashboard() {
                   <tr>
                     <td colSpan={5}>
                       <div className="empty">
-                        <div className="big">No tasks found</div>
-                        <div>Try adjusting filters or create a new task.</div>
+                        <div className="big">Vazifalar topilmadi</div>
+                        <div>Filtrlarni o‘zgartirib ko‘ring yoki yangi vazifa yarating.</div>
                       </div>
                     </td>
                   </tr>
@@ -212,12 +212,12 @@ export default function AdminDashboard() {
                         <div className="task-title">{t.title}</div>
                         {t.description && <div className="task-desc">{t.description}</div>}
                       </td>
-                      <td>{t.assignee_name || <span className="muted">Unassigned</span>}</td>
+                      <td>{t.assignee_name || <span className="muted">Biriktirilmagan</span>}</td>
                       <td><StatusBadge status={t.status} /></td>
                       <td>{t.due_date || <span className="muted">—</span>}</td>
                       <td className="right">
                         <button className="btn btn-sm" onClick={() => openEdit(t)}>
-                          Edit
+                          Tahrirlash
                         </button>
                       </td>
                     </tr>

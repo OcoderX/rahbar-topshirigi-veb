@@ -12,7 +12,7 @@ function authenticate(req, _res, next) {
   const [scheme, token] = header.split(' ');
 
   if (scheme !== 'Bearer' || !token) {
-    return next(ApiError.unauthorized('Missing or malformed Authorization header'));
+    return next(ApiError.unauthorized('Avtorizatsiya sarlavhasi (header) topilmadi yoki noto‘g‘ri'));
   }
 
   try {
@@ -20,7 +20,7 @@ function authenticate(req, _res, next) {
     req.user = { id: payload.id, role: payload.role, name: payload.name };
     next();
   } catch (_err) {
-    next(ApiError.unauthorized('Invalid or expired token'));
+    next(ApiError.unauthorized('Token yaroqsiz yoki muddati o‘tgan'));
   }
 }
 
@@ -29,7 +29,7 @@ function authorize(...roles) {
   return (req, _res, next) => {
     if (!req.user) return next(ApiError.unauthorized());
     if (!roles.includes(req.user.role)) {
-      return next(ApiError.forbidden('You do not have permission to perform this action'));
+      return next(ApiError.forbidden('Ushbu amalni bajarish uchun sizda yetarli ruxsat yo‘q'));
     }
     next();
   };

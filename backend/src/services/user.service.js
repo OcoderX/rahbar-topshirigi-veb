@@ -12,7 +12,7 @@ const UserService = {
 
   async getUserById(id) {
     const user = await UserModel.findById(id);
-    if (!user) throw ApiError.notFound('User not found');
+    if (!user) throw ApiError.notFound('Foydalanuvchi topilmadi');
     return user;
   },
 
@@ -22,10 +22,10 @@ const UserService = {
    */
   async getTasksForUser(userId, opts = {}, actor) {
     if (actor && actor.role !== 'admin' && actor.id !== userId) {
-      throw ApiError.forbidden('You can only view your own tasks');
+      throw ApiError.forbidden('Faqat o‘zingizning vazifalaringizni ko‘ra olasiz');
     }
     const user = await UserModel.findById(userId);
-    if (!user) throw ApiError.notFound('User not found');
+    if (!user) throw ApiError.notFound('Foydalanuvchi topilmadi');
     return TaskModel.findAll({ ...opts, assignedTo: userId });
   },
 };

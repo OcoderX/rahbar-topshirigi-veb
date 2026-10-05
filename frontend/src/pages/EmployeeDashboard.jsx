@@ -15,8 +15,13 @@ const NEXT_STATUS = {
   completed: null,
 };
 const NEXT_LABEL = {
-  pending: 'Start',
-  in_progress: 'Mark complete',
+  pending: 'Boshlash',
+  in_progress: 'Bajarildi deb belgilash',
+};
+const STATUS_UZ = {
+  pending: 'Kutilmoqda',
+  in_progress: 'Jarayonda',
+  completed: 'Bajarildi',
 };
 
 export default function EmployeeDashboard() {
@@ -76,7 +81,7 @@ export default function EmployeeDashboard() {
     setUpdatingId(task.id);
     try {
       await taskApi.update(task.id, { status: next });
-      push(`Moved "${task.title}" to ${next.replace('_', ' ')}`);
+      push(`"${task.title}" holati yangilandi: ${STATUS_UZ[next] || next}`);
       load();
     } catch (err) {
       push(err.message, 'error');
@@ -91,8 +96,8 @@ export default function EmployeeDashboard() {
       <div className="container page">
         <header className="page-head">
           <div>
-            <h1>My Tasks</h1>
-            <p className="lede">Hi {user?.name?.split(' ')[0]} — here's what's on your plate.</p>
+            <h1>Mening vazifalarim</h1>
+            <p className="lede">Salom, {user?.name?.split(' ')[0]} — sizga biriktirilgan vazifalar ro‘yxati.</p>
           </div>
         </header>
 
@@ -101,36 +106,36 @@ export default function EmployeeDashboard() {
         <div className="stats">
           <div className="card stat">
             <div className="n">{total}</div>
-            <div className="l">Assigned to me</div>
+            <div className="l">Menga biriktirilgan</div>
             <div className="bar"><i style={{ width: '100%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{counts.pending}</div>
-            <div className="l">Pending (this page)</div>
+            <div className="l">Kutilmoqda (ushbu sahifada)</div>
             <div className="bar"><i style={{ width: '50%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{counts.in_progress}</div>
-            <div className="l">In progress (this page)</div>
+            <div className="l">Jarayonda (ushbu sahifada)</div>
             <div className="bar"><i style={{ width: '70%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{counts.completed}</div>
-            <div className="l">Completed (this page)</div>
+            <div className="l">Bajarilgan (ushbu sahifada)</div>
             <div className="bar"><i style={{ width: '100%' }} /></div>
           </div>
         </div>
 
         <div className="card card-pad">
-          <div className="section-title">Task list</div>
+          <div className="section-title">Vazifalar ro‘yxati</div>
           <div className="filters">
             <div className="field">
-              <label>Status</label>
+              <label>Holati</label>
               <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value="">Barcha holatlar</option>
+                <option value="pending">Kutilmoqda</option>
+                <option value="in_progress">Jarayonda</option>
+                <option value="completed">Bajarildi</option>
               </select>
             </div>
           </div>
@@ -139,10 +144,10 @@ export default function EmployeeDashboard() {
             <table className="tasks">
               <thead>
                 <tr>
-                  <th>Task</th>
-                  <th>Status</th>
-                  <th>Due date</th>
-                  <th className="right">Update</th>
+                  <th>Vazifa</th>
+                  <th>Holati</th>
+                  <th>Bajarish muddati</th>
+                  <th className="right">Harakat</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,7 +155,7 @@ export default function EmployeeDashboard() {
                   <tr>
                     <td colSpan={4}>
                       <div className="center-screen" style={{ height: 120 }}>
-                        <span className="spinner" /> Loading…
+                        <span className="spinner" /> Yuklanmoqda…
                       </div>
                     </td>
                   </tr>
@@ -158,8 +163,8 @@ export default function EmployeeDashboard() {
                   <tr>
                     <td colSpan={4}>
                       <div className="empty">
-                        <div className="big">Nothing here</div>
-                        <div>You have no tasks matching this filter.</div>
+                        <div className="big">Hozircha hech narsa yo‘q</div>
+                        <div>Ushbu filtr bo‘yicha sizda vazifalar mavjud emas.</div>
                       </div>
                     </td>
                   </tr>
@@ -184,7 +189,7 @@ export default function EmployeeDashboard() {
                               {updatingId === t.id ? '…' : NEXT_LABEL[t.status]}
                             </button>
                           ) : (
-                            <span className="muted">Done ✓</span>
+                            <span className="muted">Bajarildi ✓</span>
                           )}
                         </td>
                       </tr>

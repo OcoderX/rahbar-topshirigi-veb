@@ -6,7 +6,7 @@ export default function Pagination({ page, limit, total, onChange }) {
   return (
     <div className="pager">
       <span>
-        {total === 0 ? 'No results' : `Showing ${from}–${to} of ${total}`}
+        {total === 0 ? 'Natija topilmadi' : `${total} tadan ${from}–${to} ko‘rsatilmoqda`}
       </span>
       <div className="controls">
         <button
@@ -14,17 +14,17 @@ export default function Pagination({ page, limit, total, onChange }) {
           disabled={page <= 1}
           onClick={() => onChange(page - 1)}
         >
-          ← Prev
+          ← Oldingi
         </button>
         <span className="muted">
-          Page {page} / {totalPages}
+          {page} / {totalPages} sahifa
         </span>
         <button
           className="btn btn-sm"
           disabled={page >= totalPages}
           onClick={() => onChange(page + 1)}
         >
-          Next →
+          Keyingi →
         </button>
       </div>
     </div>

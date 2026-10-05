@@ -12,7 +12,7 @@ export default function Login() {
 
   async function handleSubmit() {
     setError('');
-    if (!email || !password) return setError('Please enter your email and password.');
+    if (!email || !password) return setError('Iltimos, email va parolingizni kiriting.');
     setLoading(true);
     try {
       const user = await login(email, password);
@@ -40,23 +40,23 @@ export default function Login() {
         <div className="kicker">TaskFlow</div>
         <div>
           <h1>
-            Assign, track,
+            Vazifalarni biriktiring,
             <br />
-            and finish work.
+            kuzating va yakunlang.
           </h1>
           <p>
-            A focused task tracker for teams. Admins assign and oversee; employees
-            move their work forward, one status at a time.
+            Jamoalar uchun qulay va ixcham vazifalar boshqaruv tizimi. Administratorlar vazifalarni
+            biriktiradi va nazorat qiladi; xodimlar esa o‘z ishlarini bosqichma-bosqich bajaradi.
           </p>
         </div>
         <div className="demo">
-          <strong>Demo accounts</strong> (password: <code>password123</code>)
+          <strong>Demo hisoblar</strong> (parol: <code>password123</code>)
           <div style={{ marginTop: '.5rem', display: 'grid', gap: '.3rem' }}>
             <button className="btn btn-sm btn-ghost" style={{ color: '#f0c9b8', justifyContent: 'flex-start' }} onClick={() => fill('admin@demo.com')}>
-              admin@demo.com — Admin
+              admin@demo.com — Administrator
             </button>
             <button className="btn btn-sm btn-ghost" style={{ color: '#f0c9b8', justifyContent: 'flex-start' }} onClick={() => fill('aisha@demo.com')}>
-              aisha@demo.com — Employee
+              aisha@demo.com — Xodim
             </button>
           </div>
         </div>
@@ -64,25 +64,25 @@ export default function Login() {
 
       <main className="auth-form-side">
         <div className="auth-card">
-          <h2>Welcome back</h2>
-          <p className="sub">Sign in to your account to continue.</p>
+          <h2>Xush kelibsiz</h2>
+          <p className="sub">Davom etish uchun hisobingizga kiring.</p>
 
           {error && <div className="error-banner">{error}</div>}
 
           <div className="field">
-            <label>Email</label>
+            <label>Elektron pochta (Email)</label>
             <input
               className="input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="you@company.com"
+              placeholder="sizning@kompaniya.uz"
               autoComplete="username"
             />
           </div>
           <div className="field">
-            <label>Password</label>
+            <label>Parol</label>
             <input
               className="input"
               type="password"
@@ -100,7 +100,7 @@ export default function Login() {
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Kirilmoqda…' : 'Kirish'}
           </button>
         </div>
       </main>

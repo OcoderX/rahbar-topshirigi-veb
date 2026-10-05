@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
 const STATUSES = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'completed', label: 'Completed' },
+  { value: 'pending', label: 'Kutilmoqda' },
+  { value: 'in_progress', label: 'Jarayonda' },
+  { value: 'completed', label: 'Bajarildi' },
 ];
 
 /**
@@ -41,8 +41,8 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
 
   async function handleSave() {
     setError('');
-    if (!form.title.trim()) return setError('Title is required.');
-    if (!isEdit && !form.assigned_to) return setError('Please choose an assignee.');
+    if (!form.title.trim()) return setError('Sarlavha kiritilishi shart.');
+    if (!isEdit && !form.assigned_to) return setError('Iltimos, ijrochi xodimni tanlang.');
 
     setSaving(true);
     try {
@@ -65,7 +65,7 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
     <div className="overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h2>{isEdit ? 'Edit Task' : 'New Task'}</h2>
+          <h2>{isEdit ? 'Vazifani tahrirlash' : 'Yangi vazifa'}</h2>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>
             ✕
           </button>
@@ -74,33 +74,33 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
           {error && <div className="error-banner">{error}</div>}
 
           <div className="field">
-            <label>Title</label>
+            <label>Sarlavha</label>
             <input
               className="input"
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
-              placeholder="e.g. Prepare Q3 sales deck"
+              placeholder="Masalan: 3-chorak taqdimotini tayyorlash"
             />
           </div>
 
           <div className="field">
-            <label>Description</label>
+            <label>Tavsif</label>
             <textarea
               className="textarea"
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
-              placeholder="Optional details…"
+              placeholder="Qo‘shimcha tafsilotlar (ixtiyoriy)…"
             />
           </div>
 
           <div className="field">
-            <label>Assigned to</label>
+            <label>Biriktirilgan xodim</label>
             <select
               className="select"
               value={form.assigned_to}
               onChange={(e) => set('assigned_to', e.target.value)}
             >
-              <option value="">— Select employee —</option>
+              <option value="">— Xodimni tanlang —</option>
               {employees.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.name}
@@ -111,7 +111,7 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
 
           <div className="row" style={{ gap: '1rem' }}>
             <div className="field" style={{ flex: 1 }}>
-              <label>Status</label>
+              <label>Holati</label>
               <select
                 className="select"
                 value={form.status}
@@ -125,7 +125,7 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
               </select>
             </div>
             <div className="field" style={{ flex: 1 }}>
-              <label>Due date</label>
+              <label>Bajarish muddati</label>
               <input
                 type="date"
                 className="input"
@@ -137,10 +137,10 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
         </div>
         <div className="modal-foot">
           <button className="btn" onClick={onClose} disabled={saving}>
-            Cancel
+            Bekor qilish
           </button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create task'}
+            {saving ? 'Saqlanmoqda…' : isEdit ? 'O‘zgarishlarni saqlash' : 'Vazifa yaratish'}
           </button>
         </div>
       </div>

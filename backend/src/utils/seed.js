@@ -27,10 +27,10 @@ async function seed() {
     await conn.query('SET FOREIGN_KEY_CHECKS = 1');
 
     const users = [
-      ['Admin User', 'admin@demo.com', hash, 'admin'],
-      ['Aisha Khan', 'aisha@demo.com', hash, 'employee'],
-      ['Ben Carter', 'ben@demo.com', hash, 'employee'],
-      ['Chen Wei', 'chen@demo.com', hash, 'employee'],
+      ['Administrator', 'admin@demo.com', hash, 'admin'],
+      ['Oysha Karimova', 'aisha@demo.com', hash, 'employee'],
+      ['Bekzod Rustamov', 'ben@demo.com', hash, 'employee'],
+      ['Shahnoza Aliyeva', 'chen@demo.com', hash, 'employee'],
     ];
     const [userResult] = await conn.query(
       'INSERT INTO users (name, email, password, role) VALUES ?',
@@ -42,12 +42,12 @@ async function seed() {
     const chen = firstUserId + 3;
 
     const tasks = [
-      ['Prepare Q3 sales deck', 'Build the pitch deck for the Q3 review.', aisha, 'in_progress', '2026-06-20'],
-      ['Update CRM records', 'Clean up duplicate leads in the CRM.', aisha, 'pending', '2026-06-10'],
-      ['Onboard new client', 'Run kickoff call and set up the account.', ben, 'completed', '2026-05-28'],
-      ['Competitor analysis', 'Compare our pricing against top 3 competitors.', ben, 'pending', '2026-06-25'],
-      ['Write product FAQ', 'Draft FAQ for the new feature launch.', chen, 'in_progress', '2026-06-15'],
-      ['Schedule demo calls', 'Book demos with the 5 inbound leads.', chen, 'pending', '2026-06-08'],
+      ['3-chorak savdo taqdimotini tayyorlash', 'Kompaniya chorak hisoboti uchun taqdimot slaydlarini yaratish.', aisha, 'in_progress', '2026-06-20'],
+      ['CRM tizimi ma\'lumotlarini yangilash', 'CRM bazasidagi takroriy mijoz ma\'lumotlarini tozalash va saralash.', aisha, 'pending', '2026-06-10'],
+      ['Yangi hamkorni tizimga kiritish', 'Hamkor bilan tanishuv uchrashuvini o\'tkazish va shartnoma profilini ochish.', ben, 'completed', '2026-05-28'],
+      ['Bozordagi raqobatchilar tahlili', 'Mahsulotimiz narxlari va shartlarini asosiy 3 ta raqobatchi bilan solishtirish.', ben, 'pending', '2026-06-25'],
+      ['Mahsulot bo\'yicha FAQ qo\'llanmasini yozish', 'Yangi funksiyalar bo\'yicha mijozlar ko\'p beradigan savollarga javoblar tayyorlash.', chen, 'in_progress', '2026-06-15'],
+      ['Mijozlar bilan demo uchrashuvlarini belgilash', 'Sayt orqali ariza qoldirgan 5 ta mijoz bilan demo qo\'ng\'iroqlarini rejalashtirish.', chen, 'pending', '2026-06-08'],
     ];
     await conn.query(
       'INSERT INTO tasks (title, description, assigned_to, status, due_date) VALUES ?',
@@ -56,17 +56,17 @@ async function seed() {
 
     await conn.query(
       'INSERT INTO activity_logs (user_id, action, entity, details) VALUES (?, ?, ?, ?)',
-      [firstUserId, 'SEED', 'system', 'Database seeded with demo data']
+      [firstUserId, 'SEED', 'system', 'Baza dastlabki ma\'lumotlar bilan to\'ldirildi']
     );
 
     await conn.commit();
 
-    console.log('✓ Seed complete');
-    console.log('\nDemo accounts (password for all: %s):', DEMO_PASSWORD);
-    console.log('  admin@demo.com   (admin)');
-    console.log('  aisha@demo.com   (employee)');
-    console.log('  ben@demo.com     (employee)');
-    console.log('  chen@demo.com    (employee)');
+    console.log('✓ Baza muvaffaqiyatli to‘ldirildi (seed complete)');
+    console.log('\nDemo hisoblar (parol barcha uchun: %s):', DEMO_PASSWORD);
+    console.log('  admin@demo.com   (Administrator)');
+    console.log('  aisha@demo.com   (Xodim - Oysha)');
+    console.log('  ben@demo.com     (Xodim - Bekzod)');
+    console.log('  chen@demo.com    (Xodim - Shahnoza)');
   } catch (err) {
     await conn.rollback();
     throw err;

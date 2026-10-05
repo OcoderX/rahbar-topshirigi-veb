@@ -11,7 +11,7 @@ export default function ProtectedRoute({ children, roles }) {
   if (loading) {
     return (
       <div className="center-screen">
-        <span className="spinner" /> Loading…
+        <span className="spinner" /> Yuklanmoqda…
       </div>
     );
   }

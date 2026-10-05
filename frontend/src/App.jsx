@@ -12,7 +12,7 @@ function RootRedirect() {
   if (loading) {
     return (
       <div className="center-screen">
-        <span className="spinner" /> Loading…
+        <span className="spinner" /> Yuklanmoqda…
       </div>
     );
   }

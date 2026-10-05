@@ -1,8 +1,8 @@
-# TaskFlow — Employee Task Tracker
+# Rahbar topshirig'i — Xodimlar vazifalarini kuzatish tizimi (TaskFlow)
 
-A small full-stack application where an **admin** manages employees and assigns tasks, and **employees** update the status of the tasks assigned to them.
+Rahbar (admin) xodimlarni boshqarishi va vazifalarni biriktirishi, xodimlar esa o‘zlariga yuklatilgan vazifalar holatini yangilab borishi mumkin bo‘lgan to‘liq stack (Full-stack) veb-ilova.
 
-Built with **Node.js + Express + MySQL** (backend) and **React + Vite** (frontend), using JWT authentication, bcrypt password hashing, and role-based access control.
+Texnologiyalar: **Node.js + Express + MySQL** (backend) va **React + Vite** (frontend), JWT autentifikatsiyasi, bcrypt shifrlash va rollarga asoslangan ruxsatlar tizimi (RBAC).
 
 ---
 
@@ -164,14 +164,14 @@ The API is then on `http://localhost:5000`. Run the frontend locally as in Optio
 
 ## Demo Accounts
 
-All demo accounts use the password **`password123`**.
+Barcha hisoblar uchun parol: **`password123`**.
 
-| Email             | Role     |
+| Email             | Rol / Ism |
 | ----------------- | -------- |
-| `admin@demo.com`  | admin    |
-| `aisha@demo.com`  | employee |
-| `ben@demo.com`    | employee |
-| `chen@demo.com`   | employee |
+| `admin@demo.com`  | Administrator |
+| `aisha@demo.com`  | Xodim (Oysha Karimova) |
+| `ben@demo.com`    | Xodim (Bekzod Rustamov) |
+| `chen@demo.com`   | Xodim (Shahnoza Aliyeva) |
 
 The login screen also has one-click buttons to fill these in.
 

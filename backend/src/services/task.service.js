@@ -13,12 +13,12 @@ const TaskService = {
   async createTask({ title, description, assignedTo, status, dueDate }, actor) {
     const finalStatus = status || 'pending';
     if (!VALID_STATUS.includes(finalStatus)) {
-      throw ApiError.badRequest(`status must be one of: ${VALID_STATUS.join(', ')}`);
+      throw ApiError.badRequest(`Holat quyidagilardan biri bo'lishi kerak: ${VALID_STATUS.join(', ')}`);
     }
 
     // Ensure the assignee exists (also enforced by the FK, but a clean 400 is nicer).
     const assignee = await UserModel.findById(assignedTo);
-    if (!assignee) throw ApiError.badRequest('assigned_to does not reference a valid user');
+    if (!assignee) throw ApiError.badRequest('Biriktirilgan xodim tizimda topilmadi');
 
     const task = await TaskModel.create({
       title,
@@ -52,21 +52,21 @@ const TaskService = {
 
   async getTaskById(id, actor) {
     const task = await TaskModel.findById(id);
-    if (!task) throw ApiError.notFound('Task not found');
+    if (!task) throw ApiError.notFound('Vazifa topilmadi');
 
     // Employees can only view their own tasks.
     if (actor.role === 'employee' && task.assigned_to !== actor.id) {
-      throw ApiError.forbidden('You can only view tasks assigned to you');
+      throw ApiError.forbidden('Faqat o‘zingizga biriktirilgan vazifalarni ko‘ra olasiz');
     }
     return task;
   },
 
   async updateTask(id, fields, actor) {
     const task = await TaskModel.findById(id);
-    if (!task) throw ApiError.notFound('Task not found');
+    if (!task) throw ApiError.notFound('Vazifa topilmadi');
 
     if (fields.status && !VALID_STATUS.includes(fields.status)) {
-      throw ApiError.badRequest(`status must be one of: ${VALID_STATUS.join(', ')}`);
+      throw ApiError.badRequest(`Holat quyidagilardan biri bo'lishi kerak: ${VALID_STATUS.join(', ')}`);
     }
 
     const updates = {};
@@ -81,10 +81,10 @@ const TaskService = {
     } else {
       // Employees: only their own task, and only the status field.
       if (task.assigned_to !== actor.id) {
-        throw ApiError.forbidden('You can only update tasks assigned to you');
+        throw ApiError.forbidden('Faqat o‘zingizga biriktirilgan vazifalarni o‘zgartira olasiz');
       }
       if (fields.status === undefined) {
-        throw ApiError.badRequest('Employees can only update the task status');
+        throw ApiError.badRequest('Xodimlar faqat vazifa holatini yangilashlari mumkin');
       }
       updates.status = fields.status;
     }

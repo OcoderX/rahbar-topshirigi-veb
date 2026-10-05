@@ -18,11 +18,11 @@ const AuthService = {
   async register({ name, email, password, role }) {
     const finalRole = role || 'employee';
     if (!VALID_ROLES.includes(finalRole)) {
-      throw ApiError.badRequest(`role must be one of: ${VALID_ROLES.join(', ')}`);
+      throw ApiError.badRequest(`Rol quyidagilardan biri bo'lishi kerak: ${VALID_ROLES.join(', ')}`);
     }
 
     const existing = await UserModel.findByEmail(email);
-    if (existing) throw ApiError.conflict('Email is already registered');
+    if (existing) throw ApiError.conflict('Ushbu email allaqachon ro‘yxatdan o‘tgan');
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const user = await UserModel.create({ name, email, passwordHash, role: finalRole });
@@ -34,10 +34,10 @@ const AuthService = {
   async login({ email, password }) {
     const user = await UserModel.findByEmail(email);
     // Same error whether the email or password is wrong (avoids user enumeration).
-    if (!user) throw ApiError.unauthorized('Invalid email or password');
+    if (!user) throw ApiError.unauthorized('Email yoki parol noto‘g‘ri');
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) throw ApiError.unauthorized('Invalid email or password');
+    if (!match) throw ApiError.unauthorized('Email yoki parol noto‘g‘ri');
 
     const token = signToken({ id: user.id, role: user.role, name: user.name });
     return { user: toPublic(user), token };

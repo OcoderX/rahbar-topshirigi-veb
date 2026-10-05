@@ -25,6 +25,18 @@ export const taskApi = {
   get: (id) => client.get(`/tasks/${id}`).then((r) => r.data.data),
   create: (payload) => client.post('/tasks', payload).then((r) => r.data.data),
   update: (id, payload) => client.put(`/tasks/${id}`, payload).then((r) => r.data.data),
+  exportExcel: () =>
+    client
+      .get('/tasks/export/excel', { responseType: 'blob' })
+      .then((r) => {
+        const disposition = r.headers['content-disposition'];
+        let filename = 'hisobot.xlsx';
+        if (disposition) {
+          const match = disposition.match(/filename="?([^";]+)"?/);
+          if (match && match[1]) filename = match[1];
+        }
+        return { blob: r.data, filename };
+      }),
 };
 
 export const activityApi = {

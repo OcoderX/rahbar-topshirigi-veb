@@ -109,8 +109,8 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
             </select>
           </div>
 
-          <div className="row" style={{ gap: '1rem' }}>
-            <div className="field" style={{ flex: 1 }}>
+          <div className="form-row">
+            <div className="field">
               <label>Holati</label>
               <select
                 className="select"
@@ -124,7 +124,7 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
                 ))}
               </select>
             </div>
-            <div className="field" style={{ flex: 1 }}>
+            <div className="field">
               <label>Bajarish muddati</label>
               <input
                 type="date"

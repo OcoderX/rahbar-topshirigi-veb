@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   // Modal state.
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -97,6 +98,32 @@ export default function AdminDashboard() {
     loadTasks();
   }
 
+  async function handleExportExcel() {
+    setExporting(true);
+    try {
+      const { blob, filename } = await taskApi.exportExcel();
+      const safeFilename = filename.toLowerCase().endsWith('.xlsx')
+        ? filename
+        : `${filename}.xlsx`;
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = downloadUrl;
+      link.download = safeFilename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Keep the object URL alive briefly so the browser can start reading it.
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      push(`Hisobot yuklandi (${safeFilename})`);
+    } catch (err) {
+      push(err.message || 'Hisobotni yuklab olishda xatolik yuz berdi', 'error');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <>
       <Navbar />
@@ -106,9 +133,25 @@ export default function AdminDashboard() {
             <h1>Admin paneli</h1>
             <p className="lede">Jamoangizni boshqaring va yangi vazifalarni biriktiring.</p>
           </div>
-          <button className="btn btn-primary" onClick={openCreate}>
-            + Yangi vazifa
-          </button>
+          <div className="page-head-actions">
+            <button
+              id="btn-export-excel"
+              className="btn btn-excel"
+              onClick={handleExportExcel}
+              disabled={exporting}
+              title="Rahbar uchun to‘liq Excel hisobotini (.xlsx) yuklab olish"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>{exporting ? 'Tayyorlanmoqda…' : 'Hisobot (.xlsx)'}</span>
+            </button>
+            <button id="btn-create-task" className="btn btn-primary" onClick={openCreate}>
+              + Yangi vazifa
+            </button>
+          </div>
         </header>
 
         {error && <div className="error-banner">{error}</div>}
@@ -127,12 +170,18 @@ export default function AdminDashboard() {
           </div>
           <div className="card stat">
             <div className="n">{stats.byStatus.in_progress || 0}</div>
-            <div className="l">Jarayonda (ushbu sahifada)</div>
+            <div className="l">
+              <span className="stat-label-full">Jarayonda (ushbu sahifada)</span>
+              <span className="stat-label-short">Jarayonda</span>
+            </div>
             <div className="bar"><i style={{ width: '60%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{stats.byStatus.completed || 0}</div>
-            <div className="l">Bajarilgan (ushbu sahifada)</div>
+            <div className="l">
+              <span className="stat-label-full">Bajarilgan (ushbu sahifada)</span>
+              <span className="stat-label-short">Bajarildi</span>
+            </div>
             <div className="bar"><i style={{ width: '40%' }} /></div>
           </div>
         </div>
@@ -165,7 +214,7 @@ export default function AdminDashboard() {
             </div>
             {(statusFilter || dueBefore) && (
               <button
-                className="btn btn-sm"
+                className="btn btn-sm btn-clear-filters"
                 onClick={() => {
                   setStatusFilter('');
                   setDueBefore('');
@@ -176,7 +225,8 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div className="table-wrap">
+          {/* Desktop Table View (>= 768px) */}
+          <div className="table-wrap desktop-only">
             <table className="tasks">
               <thead>
                 <tr>
@@ -225,6 +275,45 @@ export default function AdminDashboard() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View (< 768px) */}
+          <div className="mobile-only task-card-list">
+            {loading ? (
+              <div className="center-screen" style={{ padding: '2rem 1rem' }}>
+                <span className="spinner" /> Vazifalar yuklanmoqda…
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="empty">
+                <div className="big">Vazifalar topilmadi</div>
+                <div>Filtrlarni o‘zgartirib ko‘ring yoki yangi vazifa yarating.</div>
+              </div>
+            ) : (
+              tasks.map((t) => (
+                <div className="task-card" key={t.id}>
+                  <div className="task-card-header">
+                    <div className="task-card-title">{t.title}</div>
+                    <StatusBadge status={t.status} />
+                  </div>
+                  {t.description && <div className="task-card-desc">{t.description}</div>}
+                  <div className="task-card-meta">
+                    <div className="task-meta-item">
+                      <span className="meta-label">Biriktirilgan:</span>
+                      <span className="meta-value">{t.assignee_name || <span className="muted">Biriktirilmagan</span>}</span>
+                    </div>
+                    <div className="task-meta-item">
+                      <span className="meta-label">Muddati:</span>
+                      <span className="meta-value">{t.due_date || <span className="muted">—</span>}</span>
+                    </div>
+                  </div>
+                  <div className="task-card-actions">
+                    <button className="btn btn-sm btn-card-action" onClick={() => openEdit(t)}>
+                      Tahrirlash
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <Pagination page={page} limit={PAGE_SIZE} total={total} onChange={setPage} />

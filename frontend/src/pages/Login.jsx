@@ -64,6 +64,13 @@ export default function Login() {
 
       <main className="auth-form-side">
         <div className="auth-card">
+          <div className="auth-mobile-brand">
+            <span className="brand-mark">
+              Task<span className="dot">Flow</span>
+            </span>
+            <span className="brand-sub">Xodimlar vazifalarini boshqarish</span>
+          </div>
+
           <h2>Xush kelibsiz</h2>
           <p className="sub">Davom etish uchun hisobingizga kiring.</p>
 
@@ -102,6 +109,28 @@ export default function Login() {
           >
             {loading ? 'Kirilmoqda…' : 'Kirish'}
           </button>
+
+          <div className="mobile-demo-section">
+            <div className="demo-divider">
+              <span>yoki demo hisob bilan kiring</span>
+            </div>
+            <div className="demo-chip-buttons">
+              <button
+                type="button"
+                className="btn btn-sm demo-chip"
+                onClick={() => fill('admin@demo.com')}
+              >
+                <span className="chip-role">Admin:</span> admin@demo.com
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm demo-chip"
+                onClick={() => fill('aisha@demo.com')}
+              >
+                <span className="chip-role">Xodim:</span> aisha@demo.com
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     </div>

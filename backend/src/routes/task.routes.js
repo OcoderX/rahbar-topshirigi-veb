@@ -25,6 +25,9 @@ router.post(
 // GET /tasks  (admins: all tasks, employees: own tasks)
 router.get('/', asyncHandler(TaskController.list));
 
+// GET /tasks/export/excel  (admin only)
+router.get('/export/excel', authorize('admin'), asyncHandler(TaskController.exportExcel));
+
 // GET /tasks/:id
 router.get('/:id', asyncHandler(TaskController.getOne));
 

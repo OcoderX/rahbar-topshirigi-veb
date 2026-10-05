@@ -43,6 +43,22 @@ const TaskController = {
     const task = await TaskService.updateTask(Number(req.params.id), req.body, req.user);
     res.json({ data: task });
   },
+
+  // GET /tasks/export/excel (admin only)
+  async exportExcel(req, res) {
+    const { buffer, filename } = await TaskService.exportExcel(req.user);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send(buffer);
+  },
 };
 
 module.exports = TaskController;

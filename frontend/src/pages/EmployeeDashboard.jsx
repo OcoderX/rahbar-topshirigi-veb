@@ -111,17 +111,26 @@ export default function EmployeeDashboard() {
           </div>
           <div className="card stat">
             <div className="n">{counts.pending}</div>
-            <div className="l">Kutilmoqda (ushbu sahifada)</div>
+            <div className="l">
+              <span className="stat-label-full">Kutilmoqda (ushbu sahifada)</span>
+              <span className="stat-label-short">Kutilmoqda</span>
+            </div>
             <div className="bar"><i style={{ width: '50%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{counts.in_progress}</div>
-            <div className="l">Jarayonda (ushbu sahifada)</div>
+            <div className="l">
+              <span className="stat-label-full">Jarayonda (ushbu sahifada)</span>
+              <span className="stat-label-short">Jarayonda</span>
+            </div>
             <div className="bar"><i style={{ width: '70%' }} /></div>
           </div>
           <div className="card stat">
             <div className="n">{counts.completed}</div>
-            <div className="l">Bajarilgan (ushbu sahifada)</div>
+            <div className="l">
+              <span className="stat-label-full">Bajarilgan (ushbu sahifada)</span>
+              <span className="stat-label-short">Bajarildi</span>
+            </div>
             <div className="bar"><i style={{ width: '100%' }} /></div>
           </div>
         </div>
@@ -140,7 +149,8 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
-          <div className="table-wrap">
+          {/* Desktop Table View (>= 768px) */}
+          <div className="table-wrap desktop-only">
             <table className="tasks">
               <thead>
                 <tr>
@@ -198,6 +208,52 @@ export default function EmployeeDashboard() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View (< 768px) */}
+          <div className="mobile-only task-card-list">
+            {loading ? (
+              <div className="center-screen" style={{ padding: '2rem 1rem' }}>
+                <span className="spinner" /> Yuklanmoqda…
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="empty">
+                <div className="big">Hozircha hech narsa yo‘q</div>
+                <div>Ushbu filtr bo‘yicha sizda vazifalar mavjud emas.</div>
+              </div>
+            ) : (
+              tasks.map((t) => {
+                const next = NEXT_STATUS[t.status];
+                return (
+                  <div className="task-card" key={t.id}>
+                    <div className="task-card-header">
+                      <div className="task-card-title">{t.title}</div>
+                      <StatusBadge status={t.status} />
+                    </div>
+                    {t.description && <div className="task-card-desc">{t.description}</div>}
+                    <div className="task-card-meta">
+                      <div className="task-meta-item">
+                        <span className="meta-label">Bajarish muddati:</span>
+                        <span className="meta-value">{t.due_date || <span className="muted">—</span>}</span>
+                      </div>
+                    </div>
+                    <div className="task-card-actions">
+                      {next ? (
+                        <button
+                          className="btn btn-sm btn-primary btn-card-action"
+                          disabled={updatingId === t.id}
+                          onClick={() => advance(t)}
+                        >
+                          {updatingId === t.id ? 'Yangilanmoqda…' : NEXT_LABEL[t.status]}
+                        </button>
+                      ) : (
+                        <div className="task-completed-label">✓ Bajarildi</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           <Pagination page={page} limit={PAGE_SIZE} total={total} onChange={setPage} />

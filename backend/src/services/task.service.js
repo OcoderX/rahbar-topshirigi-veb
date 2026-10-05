@@ -2,6 +2,13 @@
  * Task service — task business logic, including role-aware access rules
  * and activity logging (bonus).
  */
+const { execFile } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const { promisify } = require('util');
+const execFileAsync = promisify(execFile);
+
 const TaskModel = require('../models/task.model');
 const UserModel = require('../models/user.model');
 const ActivityLogModel = require('../models/activityLog.model');
@@ -100,6 +107,66 @@ const TaskService = {
     });
 
     return updated;
+  },
+
+  /**
+   * Generates a multi-sheet, executive Excel report (Umumiy, Xodimlar, Vazifalar)
+   * identical to hisobot_YYYY-MM-DD_HH-mm.xlsx.
+   */
+  async exportExcel(actor) {
+    const employees = await UserModel.findAll('employee');
+    const tasksResult = await TaskModel.findAll({
+      page: 1,
+      limit: 100000,
+      sortBy: 'created_at',
+      order: 'desc',
+    });
+    const tasks = tasksResult.data || [];
+
+    const rand = Math.random().toString(36).substring(2, 9);
+    const tempInput = path.join(os.tmpdir(), `report_in_${Date.now()}_${rand}.json`);
+    const tempOutput = path.join(os.tmpdir(), `report_out_${Date.now()}_${rand}.xlsx`);
+
+    const payload = {
+      author: { name: actor.name, email: actor.email },
+      users: employees,
+      tasks,
+    };
+
+    const scriptPath = path.join(__dirname, '..', 'utils', 'report_generator.py');
+
+    try {
+      await fs.promises.writeFile(tempInput, JSON.stringify(payload), 'utf-8');
+
+      await execFileAsync('python', [scriptPath, tempInput, tempOutput], {
+        windowsHide: true,
+        timeout: 30000,
+      });
+
+      const buffer = await fs.promises.readFile(tempOutput);
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
+      const filename = `hisobot_${timestamp}.xlsx`;
+
+      await ActivityLogModel.create({
+        userId: actor.id,
+        action: 'EXPORT_REPORT',
+        entity: 'report',
+        entityId: null,
+        details: `Exported Excel activity report (${tasks.length} tasks, ${employees.length} employees)`,
+      });
+
+      return { buffer, filename };
+    } finally {
+      try {
+        if (fs.existsSync(tempInput)) await fs.promises.unlink(tempInput);
+      } catch (_) {}
+      try {
+        if (fs.existsSync(tempOutput)) await fs.promises.unlink(tempOutput);
+      } catch (_) {}
+    }
   },
 };
 

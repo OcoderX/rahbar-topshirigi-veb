@@ -1,4 +1,4 @@
-# Rahbar topshirig'i — Xodimlar vazifalarini kuzatish tizimi (TaskFlow)
+# OcoderX — Rahbar topshirig'i (Xodimlar vazifalarini kuzatish tizimi)
 
 Rahbar (admin) xodimlarni boshqarishi va vazifalarni biriktirishi, xodimlar esa o‘zlariga yuklatilgan vazifalar holatini yangilab borishi mumkin bo‘lgan to‘liq stack (Full-stack) veb-ilova.
 
@@ -166,12 +166,16 @@ The API is then on `http://localhost:5000`. Run the frontend locally as in Optio
 
 Barcha hisoblar uchun parol: **`password123`**.
 
-| Email             | Rol / Ism |
-| ----------------- | -------- |
-| `admin@demo.com`  | Administrator |
-| `aisha@demo.com`  | Xodim (Oysha Karimova) |
-| `ben@demo.com`    | Xodim (Bekzod Rustamov) |
-| `chen@demo.com`   | Xodim (Shahnoza Aliyeva) |
+Seed jami 66 ta akkaunt yaratadi: viloyatda 1 rahbar, 1 o'rinbosar va 8 kurator;
+14 ta tumanning har birida 1 bo'lim boshlig'i va 3 xodim.
+
+| Email | Rol / hudud |
+| ----- | ----------- |
+| `rahbar@andijon.uz` | Andijon viloyati rahbari (Administrator) |
+| `orinbosar@andijon.uz` | Viloyat rahbar o'rinbosari |
+| `kurator1@andijon.uz` | Viloyat kuratori (1–8) |
+| `andijon.boshliq@andijon.uz` | Andijon tumani bo'lim boshlig'i |
+| `andijon.xodim1@andijon.uz` | Andijon tumani xodimi (1–3) |
 
 The login screen also has one-click buttons to fill these in.
 
@@ -198,11 +202,11 @@ All protected endpoints expect an `Authorization: Bearer <token>` header. The to
 
 **POST `/auth/login`**
 ```json
-{ "email": "admin@demo.com", "password": "password123" }
+{ "email": "rahbar@andijon.uz", "password": "password123" }
 ```
 Response:
 ```json
-{ "user": { "id": 1, "name": "Admin User", "email": "admin@demo.com", "role": "admin" }, "token": "eyJ..." }
+{ "user": { "id": 1, "name": "Andijon viloyati rahbari", "email": "rahbar@andijon.uz", "role": "admin" }, "token": "eyJ..." }
 ```
 
 ### Users

@@ -6,8 +6,7 @@ const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
 
-// Native browser download. The form POST lets Content-Disposition control the
-// filename without exposing the JWT in the URL.
+// Native browser download
 router.post(
   '/export/excel/download',
   authenticateDownload,
@@ -18,6 +17,9 @@ router.post(
 // All task routes require authentication.
 router.use(authenticate);
 
+// POST /tasks/upload — upload media/files/audio/video
+router.post('/upload', asyncHandler(TaskController.upload));
+
 // POST /tasks  (admin only)
 router.post(
   '/',
@@ -26,7 +28,6 @@ router.post(
     { field: 'title', required: true, type: 'string', maxLength: 200 },
     { field: 'description', type: 'string' },
     { field: 'assigned_to', required: true },
-    { field: 'status', enum: ['pending', 'in_progress', 'completed'] },
   ]),
   asyncHandler(TaskController.create)
 );
@@ -40,13 +41,32 @@ router.get('/export/excel', authorize('admin'), asyncHandler(TaskController.expo
 // GET /tasks/:id
 router.get('/:id', asyncHandler(TaskController.getOne));
 
+// POST /tasks/:id/view — employee opens/accepts task
+router.post('/:id/view', asyncHandler(TaskController.markViewed));
+
+// POST /tasks/:id/complete — employee completes with execution report
+router.post('/:id/complete', asyncHandler(TaskController.complete));
+
+// POST /tasks/:id/approve — admin accepts a submitted result
+router.post('/:id/approve', authorize('admin'), asyncHandler(TaskController.approve));
+
+// POST /tasks/:id/rework — admin returns a completed task for correction
+router.post(
+  '/:id/rework',
+  authorize('admin'),
+  validateBody([
+    { field: 'reason', required: true, type: 'string', maxLength: 2000 },
+  ]),
+  asyncHandler(TaskController.sendToRework)
+);
+
 // PUT /tasks/:id
 router.put(
   '/:id',
   validateBody([
     { field: 'title', type: 'string', maxLength: 200 },
     { field: 'description', type: 'string' },
-    { field: 'status', enum: ['pending', 'in_progress', 'completed'] },
+    { field: 'status', enum: ['pending', 'in_progress', 'submitted', 'completed'] },
   ]),
   asyncHandler(TaskController.update)
 );

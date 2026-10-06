@@ -18,6 +18,7 @@ export const authApi = {
 export const userApi = {
   list: (role) => client.get(`/users${qs({ role })}`).then((r) => r.data.data),
   tasks: (id, params) => client.get(`/users/${id}/tasks${qs(params)}`).then((r) => r.data),
+  updateProfile: (payload) => client.put('/users/profile', payload).then((r) => r.data),
 };
 
 export const taskApi = {
@@ -25,6 +26,12 @@ export const taskApi = {
   get: (id) => client.get(`/tasks/${id}`).then((r) => r.data.data),
   create: (payload) => client.post('/tasks', payload).then((r) => r.data.data),
   update: (id, payload) => client.put(`/tasks/${id}`, payload).then((r) => r.data.data),
+  markViewed: (id) => client.post(`/tasks/${id}/view`).then((r) => r.data.data),
+  complete: (id, payload) => client.post(`/tasks/${id}/complete`, payload).then((r) => r.data.data),
+  approve: (id) => client.post(`/tasks/${id}/approve`).then((r) => r.data.data),
+  sendToRework: (id, reason) =>
+    client.post(`/tasks/${id}/rework`, { reason }).then((r) => r.data.data),
+  upload: (payload) => client.post('/tasks/upload', payload).then((r) => r.data.data),
   exportExcel: () =>
     client
       .get('/tasks/export/excel', { responseType: 'blob' })

@@ -38,8 +38,13 @@ function authenticateDownload(req, _res, next) {
   }
 
   try {
-    const payload = verifyToken(token);
-    req.user = { id: payload.id, role: payload.role, name: payload.name };
+    req.user = {
+      id: payload.id,
+      role: payload.role,
+      name: payload.name,
+      position: payload.position,
+      avatar: payload.avatar,
+    };
     next();
   } catch (_err) {
     next(ApiError.unauthorized('Token yaroqsiz yoki muddati o‘tgan'));

@@ -6,15 +6,23 @@ const TaskService = require('../services/task.service');
 const TaskController = {
   // POST /tasks  (admin only)
   async create(req, res) {
-    const { title, description, assigned_to, status, due_date } = req.body;
+    const { title, description, assigned_to, status, due_date, audio_url, attachments } = req.body;
     const task = await TaskService.createTask(
-      { title, description, assignedTo: assigned_to, status, dueDate: due_date },
+      {
+        title,
+        description,
+        assignedTo: assigned_to,
+        status,
+        dueDate: due_date,
+        audioUrl: audio_url,
+        attachments,
+      },
       req.user
     );
     res.status(201).json({ data: task });
   },
 
-  // GET /tasks  — admins see all, employees see their own. Supports filters + pagination.
+  // GET /tasks  — admins see all, employees see their own.
   async list(req, res) {
     const { status, dueBefore, dueAfter, page, limit, sortBy, order } = req.query;
     const result = await TaskService.listTasks(
@@ -38,10 +46,50 @@ const TaskController = {
     res.json({ data: task });
   },
 
+  // POST /tasks/:id/view — marks task viewed / in_progress by employee
+  async markViewed(req, res) {
+    const task = await TaskService.markViewed(Number(req.params.id), req.user);
+    res.json({ data: task, message: 'Topshiriq qabul qilindi' });
+  },
+
+  // POST /tasks/:id/complete — employee completes with execution report
+  async complete(req, res) {
+    const { note, audio_url, attachments } = req.body;
+    const task = await TaskService.completeTask(
+      Number(req.params.id),
+      { note, audioUrl: audio_url, attachments },
+      req.user
+    );
+    res.json({ data: task, message: 'Topshiriq rahbar tasdig‘iga yuborildi' });
+  },
+
+  // POST /tasks/:id/approve — admin accepts and completes the task
+  async approve(req, res) {
+    const task = await TaskService.approveTask(Number(req.params.id), req.user);
+    res.json({ data: task, message: 'Topshiriq tasdiqlandi va yakunlandi' });
+  },
+
+  // POST /tasks/:id/rework — admin rejects a result and requests corrections
+  async sendToRework(req, res) {
+    const task = await TaskService.sendToRework(
+      Number(req.params.id),
+      req.body.reason,
+      req.user
+    );
+    res.json({ data: task, message: 'Topshiriq qayta ishlashga yuborildi' });
+  },
+
   // PUT /tasks/:id
   async update(req, res) {
     const task = await TaskService.updateTask(Number(req.params.id), req.body, req.user);
     res.json({ data: task });
+  },
+
+  // POST /tasks/upload — upload file, image, audio, video
+  async upload(req, res) {
+    const { file, name, type, size } = req.body;
+    const attachment = await TaskService.saveAttachment({ file, name, type, size });
+    res.status(201).json({ data: attachment });
   },
 
   // GET /tasks/export/excel (admin only)

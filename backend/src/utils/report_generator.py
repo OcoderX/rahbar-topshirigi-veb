@@ -73,14 +73,16 @@ LEVEL_TONES = {
 
 STATUS_LABELS = {
     "pending": "Kutilmoqda",
-    "in_progress": "Jarayonda",
+    "in_progress": "Ko'rildi",
+    "submitted": "Jarayonda",
     "completed": "Bajarildi",
 }
 
 STATUS_TONES = {
     "Bajarildi": "green",
-    "Kutilmoqda": "amber",
-    "Jarayonda": "blue",
+    "Kutilmoqda": "red",
+    "Ko'rildi": "grey",
+    "Jarayonda": "amber",
     "Bekor qilingan": "grey",
 }
 
@@ -263,7 +265,7 @@ class UserStats:
             self.review += 1
             if state == OVERDUE:
                 self.overdue += 1
-        elif st == "in_progress":
+        elif st in ("in_progress", "submitted"):
             self.in_work += 1
             if state == OVERDUE:
                 self.overdue += 1
@@ -489,14 +491,16 @@ def _data_bar(ws: Worksheet, col: int, last_row: int, maximum: float, color: str
 
 def _employees_sheet(ws: Worksheet, ranked: list) -> None:
     columns = [
-        Column("O'rin", 6), Column("Xodim", 26, text=True), Column("Lavozim", 20, text=True), Column("Holat", 15),
+        Column("O'rin", 6), Column("Xodim", 26, text=True), Column("Hudud", 22, text=True),
+        Column("Lavozim", 20, text=True), Column("Holat", 15),
         Column("Jami vazifa", 9), Column("Bajarilgan", 11), Column("Muddatida", 10), Column("Kechikib", 9),
         Column("Kutilmoqda", 11), Column("Jarayonda", 10), Column("Muddati o'tgan", 10),
         Column("Bekor qilingan", 10), Column("Bajarilish %", 12, PERCENT_FMT),
         Column("O'rtacha bajarish, kun", 11, DAYS_FMT), Column("Samaradorlik bali", 13), Column("Daraja", 14),
     ]
     rows = [
-        [i, u.get("name", ""), u.get("position") or (u.get("role") == "admin" and "Administrator" or "Xodim"),
+        [i, u.get("name", ""), u.get("district") or u.get("region") or "",
+         u.get("position") or (u.get("role") == "admin" and "Administrator" or "Xodim"),
          "faol", s.total, s.completed, s.on_time, s.late, s.review, s.in_work, s.overdue, s.cancelled,
          s.completion, s.avg_days, s.score, s.level]
         for i, (u, s) in enumerate(ranked, 1)
@@ -521,9 +525,11 @@ def _employees_sheet(ws: Worksheet, ranked: list) -> None:
 def _tasks_sheet(ws: Worksheet, tasks: list, author: dict, now: datetime) -> None:
     columns = [
         Column("ID", 6), Column("Vazifa", 32, text=True), Column("Tavsif", 40, text=True),
-        Column("Ijrochi", 22, text=True), Column("Lavozim", 18, text=True), Column("Bergan", 20, text=True),
+        Column("Ijrochi", 22, text=True), Column("Hudud", 22, text=True), Column("Lavozim", 18, text=True),
+        Column("Bergan", 20, text=True),
         Column("Holat", 15), Column("Berilgan", 16), Column("Muddat", 12, DATE_FMT),
         Column("Bajarilgan", 16), Column("Muddatga rioya", 16),
+        Column("Qayta ishlash", 16), Column("Rad etish sababi", 34, text=True),
     ]
     ordered = sorted(tasks, key=lambda t: (t.get("assignee_name") or "").lower())
     rows = []
@@ -544,13 +550,18 @@ def _tasks_sheet(ws: Worksheet, tasks: list, author: dict, now: datetime) -> Non
             t.get("title", ""),
             t.get("description") or "",
             t.get("assignee_name") or NOT_APPLICABLE,
-            "Xodim",
+            t.get("assignee_district") or t.get("assignee_region") or NOT_APPLICABLE,
+            t.get("assignee_position") or "Xodim",
             author_name,
             status_label,
             created_at,
             due_date,
             completed_val,
             state,
+            "Qayta ishlovda" if t.get("rework_required") else (
+                f"Qaytarilgan: {t.get('rework_count')} marta" if t.get("rework_count") else NOT_APPLICABLE
+            ),
+            t.get("rework_reason") or NOT_APPLICABLE,
         ])
 
     col = _data_sheet(ws, columns, rows, SOLID["blue"])

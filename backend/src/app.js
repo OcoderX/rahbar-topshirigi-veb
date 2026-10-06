@@ -2,6 +2,7 @@
  * Express application setup. Kept separate from server.js so it can be
  * imported in tests without binding to a port.
  */
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 
@@ -19,8 +20,13 @@ app.use(
     exposedHeaders: ['Content-Disposition'],
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// A 25 MB file grows to roughly 33 MB when encoded as base64 JSON.
+app.use(express.json({ limit: '40mb' }));
+app.use(express.urlencoded({ extended: false, limit: '40mb' }));
+
+// Static file serving for user uploads and avatars.
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
 
 // Health check.
 app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));

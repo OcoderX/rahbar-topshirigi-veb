@@ -1,14 +1,16 @@
 const LABELS = {
   pending: 'Kutilmoqda',
-  in_progress: 'Jarayonda',
+  in_progress: 'Ko‘rildi',
+  submitted: 'Jarayonda',
   completed: 'Bajarildi',
 };
 
-export default function StatusBadge({ status }) {
+export default function StatusBadge({ status, reworkRequired = false }) {
+  const isRework = reworkRequired && status === 'in_progress';
   return (
-    <span className={`badge ${status}`}>
+    <span className={`badge ${isRework ? 'rework' : status}`}>
       <span className="pip" />
-      {LABELS[status] || status}
+      {isRework ? 'Qayta ishlovda' : LABELS[status] || status}
     </span>
   );
 }

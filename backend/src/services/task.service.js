@@ -1,6 +1,5 @@
 /**
- * Task service — task business logic, including role-aware access rules
- * and activity logging (bonus).
+ * Task service — task business logic, media handling, and role-aware rules.
  */
 const { execFile } = require('child_process');
 const path = require('path');
@@ -14,16 +13,19 @@ const UserModel = require('../models/user.model');
 const ActivityLogModel = require('../models/activityLog.model');
 const ApiError = require('../utils/ApiError');
 
-const VALID_STATUS = ['pending', 'in_progress', 'completed'];
+const VALID_STATUS = ['pending', 'in_progress', 'submitted', 'completed'];
 
 const TaskService = {
-  async createTask({ title, description, assignedTo, status, dueDate }, actor) {
+  async createTask(
+    { title, description, assignedTo, status, dueDate, audioUrl, attachments },
+    actor
+  ) {
     const finalStatus = status || 'pending';
     if (!VALID_STATUS.includes(finalStatus)) {
       throw ApiError.badRequest(`Holat quyidagilardan biri bo'lishi kerak: ${VALID_STATUS.join(', ')}`);
     }
 
-    // Ensure the assignee exists (also enforced by the FK, but a clean 400 is nicer).
+    // Ensure the assignee exists
     const assignee = await UserModel.findById(assignedTo);
     if (!assignee) throw ApiError.badRequest('Biriktirilgan xodim tizimda topilmadi');
 
@@ -33,6 +35,8 @@ const TaskService = {
       assignedTo,
       status: finalStatus,
       dueDate: dueDate || null,
+      audioUrl: audioUrl || null,
+      attachments: attachments || [],
     });
 
     await ActivityLogModel.create({
@@ -47,8 +51,7 @@ const TaskService = {
   },
 
   /**
-   * List tasks. Admins see everything; employees are scoped to their own tasks
-   * regardless of any assignedTo filter they try to pass.
+   * List tasks. Admins see everything; employees are scoped to their own tasks.
    */
   listTasks(opts, actor) {
     if (actor.role === 'employee') {
@@ -58,14 +61,117 @@ const TaskService = {
   },
 
   async getTaskById(id, actor) {
-    const task = await TaskModel.findById(id);
+    let task = await TaskModel.findById(id);
     if (!task) throw ApiError.notFound('Vazifa topilmadi');
 
     // Employees can only view their own tasks.
     if (actor.role === 'employee' && task.assigned_to !== actor.id) {
       throw ApiError.forbidden('Faqat o‘zingizga biriktirilgan vazifalarni ko‘ra olasiz');
     }
+
+    // When an employee opens/reads a task that is currently 'pending',
+    // automatically transition status to 'in_progress' and set viewed_at timestamp!
+    if (actor.role === 'employee' && task.status === 'pending') {
+      task = await TaskModel.markViewed(id, actor.id);
+      await ActivityLogModel.create({
+        userId: actor.id,
+        action: 'VIEW_TASK',
+        entity: 'task',
+        entityId: id,
+        details: `Employee opened task #${id} (status transitioned to in_progress)`,
+      });
+    }
+
     return task;
+  },
+
+  /**
+   * Explicitly mark task as viewed / accepted by employee.
+   */
+  async markViewed(id, actor) {
+    const task = await TaskModel.findById(id);
+    if (!task) throw ApiError.notFound('Vazifa topilmadi');
+    if (actor.role === 'employee' && task.assigned_to !== actor.id) {
+      throw ApiError.forbidden('Faqat o‘zingizga biriktirilgan vazifalarni qabul qila olasiz');
+    }
+
+    const updated = await TaskModel.markViewed(id, actor.id);
+    return updated;
+  },
+
+  /** Employee submits the result for manager approval. */
+  async completeTask(id, { note, audioUrl, attachments }, actor) {
+    const task = await TaskModel.findById(id);
+    if (!task) throw ApiError.notFound('Vazifa topilmadi');
+    if (actor.role !== 'employee' || task.assigned_to !== actor.id) {
+      throw ApiError.forbidden('Faqat o‘zingizga biriktirilgan vazifalarni bajara olasiz');
+    }
+    if (task.status !== 'in_progress') {
+      throw ApiError.badRequest('Faqat ko‘rilgan topshiriqni rahbar tasdig‘iga yuborish mumkin');
+    }
+
+    const updated = await TaskModel.complete(id, { note, audioUrl, attachments });
+
+    await ActivityLogModel.create({
+      userId: actor.id,
+      action: 'COMPLETE_TASK',
+      entity: 'task',
+      entityId: id,
+      details: `Completed task #${id} with report`,
+    });
+
+    return updated;
+  },
+
+  /** Manager accepts a submitted result and marks the task completed. */
+  async approveTask(id, actor) {
+    const task = await TaskModel.findById(id);
+    if (!task) throw ApiError.notFound('Vazifa topilmadi');
+    if (task.status !== 'submitted') {
+      throw ApiError.badRequest('Faqat rahbar tasdig‘idagi topshiriqni tasdiqlash mumkin');
+    }
+
+    const updated = await TaskModel.approve(id);
+    await ActivityLogModel.create({
+      userId: actor.id,
+      action: 'APPROVE_TASK',
+      entity: 'task',
+      entityId: id,
+      details: `Task #${id} approved and completed`,
+    });
+    return updated;
+  },
+
+  /**
+   * Admin rejects a submitted result and returns the task to in-progress.
+   * The previous report remains available as context for the correction.
+   */
+  async sendToRework(id, reason, actor) {
+    const task = await TaskModel.findById(id);
+    if (!task) throw ApiError.notFound('Vazifa topilmadi');
+    if (task.status !== 'submitted') {
+      throw ApiError.badRequest('Faqat rahbar tasdig‘idagi topshiriqni qayta ishlashga yuborish mumkin');
+    }
+
+    const cleanReason = String(reason || '').trim();
+    if (!cleanReason) {
+      throw ApiError.badRequest('Qayta ishlash sababini kiriting');
+    }
+
+    const updated = await TaskModel.sendToRework(id, {
+      reason: cleanReason,
+      requestedBy: actor.id,
+    });
+
+    await ActivityLogModel.create({
+      userId: actor.id,
+      action: 'SEND_TO_REWORK',
+      entity: 'task',
+      entityId: id,
+      details: `Task #${id} returned for rework: ${cleanReason}`.slice(0, 500),
+    });
+
+    return updated;
   },
 
   async updateTask(id, fields, actor) {
@@ -79,21 +185,26 @@ const TaskService = {
     const updates = {};
 
     if (actor.role === 'admin') {
-      // Admins may edit any field.
+      // Admins may edit any field
       if (fields.title !== undefined) updates.title = fields.title;
       if (fields.description !== undefined) updates.description = fields.description;
       if (fields.status !== undefined) updates.status = fields.status;
       if (fields.due_date !== undefined) updates.due_date = fields.due_date;
       if (fields.assigned_to !== undefined) updates.assigned_to = fields.assigned_to;
+      if (fields.audio_url !== undefined) updates.audio_url = fields.audio_url;
+      if (fields.attachments !== undefined) updates.attachments = fields.attachments;
     } else {
-      // Employees: only their own task, and only the status field.
+      // Employees: only their own task, update status/completion
       if (task.assigned_to !== actor.id) {
         throw ApiError.forbidden('Faqat o‘zingizga biriktirilgan vazifalarni o‘zgartira olasiz');
       }
-      if (fields.status === undefined) {
-        throw ApiError.badRequest('Xodimlar faqat vazifa holatini yangilashlari mumkin');
+      if (fields.status !== undefined) updates.status = fields.status;
+      if (fields.completion_note !== undefined) updates.completion_note = fields.completion_note;
+      if (fields.completion_audio !== undefined) updates.completion_audio = fields.completion_audio;
+      if (fields.completion_attachments !== undefined) updates.completion_attachments = fields.completion_attachments;
+      if (fields.status === 'completed' && !task.completed_at) {
+        updates.completed_at = new Date();
       }
-      updates.status = fields.status;
     }
 
     const updated = await TaskModel.update(id, updates);
@@ -103,15 +214,81 @@ const TaskService = {
       action: 'UPDATE_TASK',
       entity: 'task',
       entityId: id,
-      details: `Updated task #${id} (${Object.keys(updates).join(', ')})`,
+      details: `Updated task #${id}`,
     });
 
     return updated;
   },
 
   /**
-   * Generates a multi-sheet, executive Excel report (Umumiy, Xodimlar, Vazifalar)
-   * identical to hisobot_YYYY-MM-DD_HH-mm.xlsx.
+   * Save uploaded file or voice recording from base64 string.
+   */
+  async saveAttachment({ file, name, type, size }) {
+    if (!file || typeof file !== 'string') {
+      throw ApiError.badRequest('Fayl ma’lumoti yuborilmadi');
+    }
+
+    let base64Data = file;
+    let ext = 'bin';
+
+    if (file.startsWith('data:')) {
+      const match = file.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        const mime = match[1];
+        base64Data = match[2];
+        if (mime.includes('audio/ogg') || mime.includes('audio/opus')) ext = 'ogg';
+        else if (mime.includes('audio/webm')) ext = 'webm';
+        else if (mime.includes('audio/wav')) ext = 'wav';
+        else if (mime.includes('audio/mp3') || mime.includes('audio/mpeg')) ext = 'mp3';
+        else if (mime.includes('video/mp4')) ext = 'mp4';
+        else if (mime.includes('video/webm')) ext = 'webm';
+        else if (mime.includes('pdf')) ext = 'pdf';
+        else if (mime.includes('spreadsheetml') || mime.includes('excel')) ext = 'xlsx';
+        else if (mime.includes('jpeg') || mime.includes('jpg')) ext = 'jpg';
+        else if (mime.includes('png')) ext = 'png';
+        else if (mime.includes('webp')) ext = 'webp';
+      }
+    }
+
+    if (name && name.includes('.')) {
+      const parts = name.split('.');
+      ext = parts[parts.length - 1].toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    const safeBaseName = (name || 'fayl')
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[^a-zA-Z0-9_\-]/g, '_')
+      .substring(0, 30);
+
+    const filename = `file_${Date.now()}_${Math.random().toString(36).substring(2, 7)}_${safeBaseName}.${ext}`;
+    const uploadsDir = path.join(__dirname, '../../uploads/tasks');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const buffer = Buffer.from(base64Data, 'base64');
+    const filePath = path.join(uploadsDir, filename);
+    await fs.promises.writeFile(filePath, buffer);
+
+    // Mirror to frontend public
+    try {
+      const frontendPublicDir = path.join(__dirname, '../../../frontend/public/uploads/tasks');
+      if (fs.existsSync(frontendPublicDir)) {
+        await fs.promises.writeFile(path.join(frontendPublicDir, filename), buffer);
+      }
+    } catch (_e) {}
+
+    const url = `/uploads/tasks/${filename}`;
+    return {
+      url,
+      name: name || filename,
+      type: type || `application/${ext}`,
+      size: size || buffer.length,
+    };
+  },
+
+  /**
+   * Generates a multi-sheet Excel report.
    */
   async exportExcel(actor) {
     const employees = await UserModel.findAll('employee');
@@ -144,28 +321,14 @@ const TaskService = {
       });
 
       const buffer = await fs.promises.readFile(tempOutput);
-
       const now = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
-      const filename = `hisobot_${timestamp}.xlsx`;
-
-      await ActivityLogModel.create({
-        userId: actor.id,
-        action: 'EXPORT_REPORT',
-        entity: 'report',
-        entityId: null,
-        details: `Exported Excel activity report (${tasks.length} tasks, ${employees.length} employees)`,
-      });
+      const pad = (v) => String(v).padStart(2, '0');
+      const filename = `hisobot_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}.xlsx`;
 
       return { buffer, filename };
     } finally {
-      try {
-        if (fs.existsSync(tempInput)) await fs.promises.unlink(tempInput);
-      } catch (_) {}
-      try {
-        if (fs.existsSync(tempOutput)) await fs.promises.unlink(tempOutput);
-      } catch (_) {}
+      await fs.promises.unlink(tempInput).catch(() => {});
+      await fs.promises.unlink(tempOutput).catch(() => {});
     }
   },
 };

@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
 import Pagination from '../components/Pagination';
 import TaskModal from '../components/TaskModal';
+import TaskDetailModal from '../components/TaskDetailModal';
 import { useToast } from '../components/Toast';
 import { taskApi, userApi } from '../api/endpoints';
 
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
   // Modal state.
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [detailTask, setDetailTask] = useState(null);
   const [exporting, setExporting] = useState(false);
 
   const loadTasks = useCallback(async () => {
@@ -49,13 +51,17 @@ export default function AdminDashboard() {
     }
   }, [statusFilter, dueBefore, sortBy, page]);
 
-  // Load employees once.
-  useEffect(() => {
+  // Load employees list.
+  const loadEmployees = useCallback(() => {
     userApi
       .list('employee')
       .then(setEmployees)
       .catch((err) => setError(err.message));
   }, []);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
 
   // Reset to page 1 whenever a filter changes.
   useEffect(() => {
@@ -77,10 +83,12 @@ export default function AdminDashboard() {
   }, [tasks]);
 
   function openCreate() {
+    loadEmployees();
     setEditing(null);
     setModalOpen(true);
   }
   function openEdit(task) {
+    loadEmployees();
     setEditing(task);
     setModalOpen(true);
   }
@@ -89,13 +97,29 @@ export default function AdminDashboard() {
     if (editing) {
       await taskApi.update(editing.id, payload);
       push('Vazifa yangilandi');
+      setModalOpen(false);
+      setEditing(null);
+      loadTasks();
     } else {
-      await taskApi.create(payload);
-      push('Yangi vazifa yaratildi');
+      const assignees = Array.isArray(payload.assigned_to)
+        ? payload.assigned_to
+        : [payload.assigned_to];
+
+      await Promise.all(
+        assignees.map((assigneeId) =>
+          taskApi.create({ ...payload, assigned_to: Number(assigneeId) })
+        )
+      );
+
+      push(
+        assignees.length > 1
+          ? `${assignees.length} ta xodim uchun vazifa yaratildi`
+          : 'Yangi vazifa yaratildi'
+      );
+      setModalOpen(false);
+      setEditing(null);
+      loadTasks();
     }
-    setModalOpen(false);
-    setEditing(null);
-    loadTasks();
   }
 
   async function handleExportExcel() {
@@ -173,8 +197,8 @@ export default function AdminDashboard() {
       <div className="container page">
         <header className="page-head">
           <div>
-            <h1>Admin paneli</h1>
-            <p className="lede">Jamoangizni boshqaring va yangi vazifalarni biriktiring.</p>
+            <h1>Andijon viloyati boshqaruv paneli</h1>
+            <p className="lede">Viloyat va 14 ta tuman xodimlariga vazifalarni biriktiring.</p>
           </div>
           <div className="page-head-actions">
             <button
@@ -202,8 +226,8 @@ export default function AdminDashboard() {
         {/* Stat tiles */}
         <div className="stats">
           <div className="card stat">
-            <div className="n">{employees.length}</div>
-            <div className="l">Xodimlar</div>
+            <div className="n">{employees.length + 1}</div>
+            <div className="l">Akkauntlar</div>
             <div className="bar"><i style={{ width: '100%' }} /></div>
           </div>
           <div className="card stat">
@@ -212,9 +236,9 @@ export default function AdminDashboard() {
             <div className="bar"><i style={{ width: '100%' }} /></div>
           </div>
           <div className="card stat">
-            <div className="n">{stats.byStatus.in_progress || 0}</div>
+            <div className="n">{stats.byStatus.submitted || 0}</div>
             <div className="l">
-              <span className="stat-label-full">Jarayonda (ushbu sahifada)</span>
+              <span className="stat-label-full">Jarayonda / tasdiqda</span>
               <span className="stat-label-short">Jarayonda</span>
             </div>
             <div className="bar"><i style={{ width: '60%' }} /></div>
@@ -238,7 +262,8 @@ export default function AdminDashboard() {
               <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="">Barcha holatlar</option>
                 <option value="pending">Kutilmoqda</option>
-                <option value="in_progress">Jarayonda</option>
+                <option value="in_progress">Ko‘rildi</option>
+                <option value="submitted">Jarayonda (rahbar tasdig‘ida)</option>
                 <option value="completed">Bajarildi</option>
               </select>
             </div>
@@ -302,13 +327,65 @@ export default function AdminDashboard() {
                   tasks.map((t) => (
                     <tr key={t.id}>
                       <td>
-                        <div className="task-title">{t.title}</div>
+                        <div className="task-title-row">
+                          <span className="task-title clickable-title" onClick={() => setDetailTask(t)}>
+                            {t.title}
+                          </span>
+                          {t.audio_url && <span className="media-indicator-pill audio" title="Ovozli topshiriq">🎙️ Ovoz</span>}
+                          {t.attachments && t.attachments.length > 0 && (
+                            <span className="media-indicator-pill att" title={`${t.attachments.length} ta fayl`}>📎 {t.attachments.length}</span>
+                          )}
+                          {t.completion_note && (
+                            <span className="media-indicator-pill report" title="Xodim hisoboti mavjud">📝 Hisobot</span>
+                          )}
+                        </div>
                         {t.description && <div className="task-desc">{t.description}</div>}
                       </td>
-                      <td>{t.assignee_name || <span className="muted">Biriktirilmagan</span>}</td>
-                      <td><StatusBadge status={t.status} /></td>
-                      <td>{t.due_date || <span className="muted">—</span>}</td>
+                      <td>
+                        {t.assignee_name ? (
+                          <div className="table-assignee-cell">
+                            <div className="table-assignee-avatar">
+                              {t.assignee_avatar ? (
+                                <img
+                                  src={t.assignee_avatar}
+                                  alt={t.assignee_name}
+                                  className="assignee-thumb"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : null}
+                              <span className={`assignee-thumb-fallback ${t.assignee_avatar ? 'hidden' : ''}`}>
+                                {t.assignee_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="table-assignee-text">
+                              <div className="assignee-table-name">{t.assignee_name}</div>
+                              {t.assignee_position && (
+                                <div className="assignee-table-pos">{t.assignee_position}</div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="muted">Biriktirilmagan</span>
+                        )}
+                      </td>
+                      <td><StatusBadge status={t.status} reworkRequired={t.rework_required} /></td>
+                      <td>
+                        <div className="table-date-cell">
+                          <span>{t.due_date ? t.due_date.replace('T', ' ').slice(0, 16) : '—'}</span>
+                          {t.created_at && (
+                            <span className="table-created-sub">
+                              Yaratildi: {new Date(t.created_at).toLocaleDateString('uz-UZ')}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="right">
+                        <button className="btn btn-sm btn-outline-accent mr-1" onClick={() => setDetailTask(t)} title="Topshiriq va hisobotni ko‘rish">
+                          Ko‘rish
+                        </button>
                         <button className="btn btn-sm" onClick={() => openEdit(t)}>
                           Tahrirlash
                         </button>
@@ -335,21 +412,56 @@ export default function AdminDashboard() {
               tasks.map((t) => (
                 <div className="task-card" key={t.id}>
                   <div className="task-card-header">
-                    <div className="task-card-title">{t.title}</div>
-                    <StatusBadge status={t.status} />
+                    <div className="task-title-row">
+                      <div className="task-card-title clickable-title" onClick={() => setDetailTask(t)}>
+                        {t.title}
+                      </div>
+                      {t.audio_url && <span className="media-indicator-pill audio" title="Ovozli topshiriq">🎙️ Ovoz</span>}
+                      {t.attachments && t.attachments.length > 0 && (
+                        <span className="media-indicator-pill att" title={`${t.attachments.length} ta fayl`}>📎 {t.attachments.length}</span>
+                      )}
+                      {t.completion_note && (
+                        <span className="media-indicator-pill report" title="Xodim hisoboti mavjud">📝 Hisobot</span>
+                      )}
+                    </div>
+                    <StatusBadge status={t.status} reworkRequired={t.rework_required} />
                   </div>
                   {t.description && <div className="task-card-desc">{t.description}</div>}
                   <div className="task-card-meta">
                     <div className="task-meta-item">
                       <span className="meta-label">Biriktirilgan:</span>
-                      <span className="meta-value">{t.assignee_name || <span className="muted">Biriktirilmagan</span>}</span>
+                      <span className="meta-value">
+                        {t.assignee_name ? (
+                          <span className="mobile-assignee-badge">
+                            {t.assignee_avatar && (
+                              <img
+                                src={t.assignee_avatar}
+                                alt=""
+                                className="mobile-avatar-tiny"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            )}
+                            <span className="mobile-assignee-name">{t.assignee_name}</span>
+                            {(t.assignee_position || t.assignee_district || t.assignee_region) && (
+                              <span className="mobile-pos-text">
+                                ({[t.assignee_position, t.assignee_district || t.assignee_region].filter(Boolean).join(' · ')})
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="muted">Biriktirilmagan</span>
+                        )}
+                      </span>
                     </div>
                     <div className="task-meta-item">
                       <span className="meta-label">Muddati:</span>
-                      <span className="meta-value">{t.due_date || <span className="muted">—</span>}</span>
+                      <span className="meta-value">{t.due_date ? t.due_date.replace('T', ' ').slice(0, 16) : <span className="muted">—</span>}</span>
                     </div>
                   </div>
                   <div className="task-card-actions">
+                    <button className="btn btn-sm btn-outline-accent mr-1" onClick={() => setDetailTask(t)} title="Topshiriq va hisobotni ko‘rish">
+                      Ko‘rish
+                    </button>
                     <button className="btn btn-sm btn-card-action" onClick={() => openEdit(t)}>
                       Tahrirlash
                     </button>
@@ -372,6 +484,14 @@ export default function AdminDashboard() {
             setEditing(null);
           }}
           onSubmit={handleSubmit}
+        />
+      )}
+
+      {detailTask && (
+        <TaskDetailModal
+          task={detailTask}
+          onClose={() => setDetailTask(null)}
+          onTaskUpdated={loadTasks}
         />
       )}
     </>

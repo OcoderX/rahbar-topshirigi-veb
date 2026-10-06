@@ -20,6 +20,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Health check.
 app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));

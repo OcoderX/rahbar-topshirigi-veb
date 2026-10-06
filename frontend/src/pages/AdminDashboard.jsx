@@ -101,23 +101,66 @@ export default function AdminDashboard() {
   async function handleExportExcel() {
     setExporting(true);
     try {
-      const { blob, filename } = await taskApi.exportExcel();
-      const safeFilename = filename.toLowerCase().endsWith('.xlsx')
-        ? filename
-        : `${filename}.xlsx`;
-      const downloadUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      // Chromium browsers can write the workbook directly to a user-selected
+      // .xlsx file. This avoids blob URL filenames such as random UUIDs.
+      if ('showSaveFilePicker' in window) {
+        const now = new Date();
+        const pad = (value) => String(value).padStart(2, '0');
+        const suggestedName = `hisobot_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}.xlsx`;
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName,
+          types: [
+            {
+              description: 'Excel ishchi kitobi (.xlsx)',
+              accept: {
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+              },
+            },
+          ],
+          excludeAcceptAllOption: true,
+        });
+        const { blob } = await taskApi.exportExcel();
+        const writable = await fileHandle.createWritable();
 
-      link.href = downloadUrl;
-      link.download = safeFilename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+        await writable.write(blob);
+        await writable.close();
+        push(`Excel hisoboti saqlandi (${fileHandle.name})`);
+        return;
+      }
 
-      // Keep the object URL alive briefly so the browser can start reading it.
-      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
-      push(`Hisobot yuklandi (${safeFilename})`);
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Avtorizatsiya tokeni topilmadi');
+
+      const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+      const frameName = `excel-download-${Date.now()}`;
+      const frame = document.createElement('iframe');
+      const form = document.createElement('form');
+      const tokenInput = document.createElement('input');
+
+      frame.name = frameName;
+      frame.title = 'Excel hisobotini yuklab olish';
+      frame.hidden = true;
+
+      form.method = 'POST';
+      form.action = `${apiUrl}/tasks/export/excel/download`;
+      form.target = frameName;
+      form.hidden = true;
+
+      tokenInput.type = 'hidden';
+      tokenInput.name = 'download_token';
+      tokenInput.value = token;
+      form.appendChild(tokenInput);
+
+      document.body.append(frame, form);
+      form.submit();
+      form.remove();
+
+      // The response is a native attachment, so its Content-Disposition header
+      // controls the filename. Leave the target alive until generation finishes.
+      setTimeout(() => frame.remove(), 60_000);
+      push('Excel hisoboti yuklanmoqda…');
     } catch (err) {
+      if (err.name === 'AbortError') return;
       push(err.message || 'Hisobotni yuklab olishda xatolik yuz berdi', 'error');
     } finally {
       setExporting(false);

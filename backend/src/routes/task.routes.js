@@ -1,10 +1,19 @@
 const express = require('express');
 const TaskController = require('../controllers/task.controller');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authenticateDownload, authorize } = require('../middleware/auth');
 const { validateBody } = require('../middleware/validate');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
+
+// Native browser download. The form POST lets Content-Disposition control the
+// filename without exposing the JWT in the URL.
+router.post(
+  '/export/excel/download',
+  authenticateDownload,
+  authorize('admin'),
+  asyncHandler(TaskController.exportExcel)
+);
 
 // All task routes require authentication.
 router.use(authenticate);

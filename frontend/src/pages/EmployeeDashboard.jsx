@@ -7,6 +7,7 @@ import TaskDetailModal from '../components/TaskDetailModal';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { taskApi } from '../api/endpoints';
+import { formatDateTime } from '../utils/date';
 
 const PAGE_SIZE = 8;
 
@@ -25,6 +26,7 @@ export default function EmployeeDashboard() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState('created_at');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
@@ -35,10 +37,11 @@ export default function EmployeeDashboard() {
     setError('');
     try {
       // GET /tasks already scopes employees to their own tasks server-side.
+      // Default sort is created_at desc (eng so'nggi berilgan topshiriq birinchi).
       const res = await taskApi.list({
         status: statusFilter,
-        sortBy: 'due_date',
-        order: 'asc',
+        sortBy,
+        order: sortBy === 'due_date' ? 'asc' : 'desc',
         page,
         limit: PAGE_SIZE,
       });
@@ -49,11 +52,11 @@ export default function EmployeeDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, page]);
+  }, [statusFilter, sortBy, page]);
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter]);
+  }, [statusFilter, sortBy]);
 
   useEffect(() => {
     load();
@@ -164,9 +167,29 @@ export default function EmployeeDashboard() {
                 <option value="pending">Kutilmoqda</option>
                 <option value="in_progress">Ko‘rildi</option>
                 <option value="submitted">Jarayonda (rahbar tasdig‘ida)</option>
+                <option value="rework">Qayta ishlovda</option>
                 <option value="completed">Bajarildi</option>
               </select>
             </div>
+            <div className="field">
+              <label>Saralash</label>
+              <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="created_at">Eng so‘nggi berilganlar (yangi birinchi)</option>
+                <option value="due_date">Bajarish muddati bo‘yicha</option>
+                <option value="status">Holati bo‘yicha</option>
+              </select>
+            </div>
+            {(statusFilter || sortBy !== 'created_at') && (
+              <button
+                className="btn btn-sm btn-clear-filters"
+                onClick={() => {
+                  setStatusFilter('');
+                  setSortBy('created_at');
+                }}
+              >
+                Filtrlarni tozalash
+              </button>
+            )}
           </div>
 
           {/* Desktop Table View (>= 768px) */}
@@ -176,7 +199,7 @@ export default function EmployeeDashboard() {
                 <tr>
                   <th>Vazifa</th>
                   <th>Holati</th>
-                  <th>Bajarish muddati</th>
+                  <th>Topshirilgan vaqt / Muddat</th>
                   <th className="right">Harakat</th>
                 </tr>
               </thead>
@@ -219,12 +242,16 @@ export default function EmployeeDashboard() {
                       <td><StatusBadge status={t.status} reworkRequired={t.rework_required} /></td>
                       <td>
                         <div className="table-date-cell">
-                          <span>{t.due_date ? t.due_date.replace('T', ' ').slice(0, 16) : '—'}</span>
-                          {t.created_at && (
-                            <span className="table-created-sub">
-                              Yaratildi: {new Date(t.created_at).toLocaleDateString('uz-UZ')}
-                            </span>
-                          )}
+                          <div className="table-date-line created" title="Rahbar topshiriq bergan vaqt">
+                            <span className="date-icon">🕒</span>
+                            <span className="date-tag-label">Berildi:</span>
+                            <strong className="date-tag-val">{formatDateTime(t.created_at)}</strong>
+                          </div>
+                          <div className="table-date-line due" title="Bajarish muddati">
+                            <span className="date-icon">📅</span>
+                            <span className="date-tag-label">Muddat:</span>
+                            <span className="date-tag-val">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">Muddatsiz</span>}</span>
+                          </div>
                         </div>
                       </td>
                       <td className="right">
@@ -238,19 +265,19 @@ export default function EmployeeDashboard() {
                           </button>
                         ) : t.status === 'in_progress' ? (
                           <button
-                            className="btn btn-sm"
+                            className={`btn btn-sm ${t.rework_required ? 'btn-warning' : ''}`}
                             onClick={() => setDetailTask(t)}
-                            title="Hisobot kiritish va rahbar tasdig‘iga yuborish"
+                            title={t.rework_required ? 'Rahbar qayta ishlashga qaytargan — tuzatib qayta yuboring' : 'Hisobot kiritish va rahbar tasdig‘iga yuborish'}
                           >
-                            📝 Hisobot / Yuborish
+                            {t.rework_required ? '🔄 Qayta ishlash & Yuborish' : '📝 Hisobot / Yuborish'}
                           </button>
                         ) : t.status === 'submitted' ? (
                           <button
                             className="btn btn-sm btn-warning"
                             onClick={() => setDetailTask(t)}
-                            title="Rahbar tasdig‘i kutilmoqda"
+                            title="Hisobotingiz yuborilgan. Rahbar tasdiqlashi kutilmoqda."
                           >
-                            Jarayonda / Tasdiqda
+                            ⏳ Rahbar tasdig‘ida
                           </button>
                         ) : (
                           <button
@@ -301,15 +328,13 @@ export default function EmployeeDashboard() {
                   {t.description && <div className="task-card-desc">{t.description}</div>}
                   <div className="task-card-meta">
                     <div className="task-meta-item">
-                      <span className="meta-label">Bajarish muddati:</span>
-                      <span className="meta-value">{t.due_date ? t.due_date.replace('T', ' ').slice(0, 16) : <span className="muted">—</span>}</span>
+                      <span className="meta-label">🕒 Berilgan vaqti:</span>
+                      <span className="meta-value font-medium">{formatDateTime(t.created_at)}</span>
                     </div>
-                    {t.created_at && (
-                      <div className="task-meta-item">
-                        <span className="meta-label">Yaratildi:</span>
-                        <span className="meta-value">{new Date(t.created_at).toLocaleDateString('uz-UZ')}</span>
-                      </div>
-                    )}
+                    <div className="task-meta-item">
+                      <span className="meta-label">📅 Bajarish muddati:</span>
+                      <span className="meta-value">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">Muddatsiz</span>}</span>
+                    </div>
                   </div>
                   <div className="task-card-actions">
                     {t.status === 'pending' ? (
@@ -321,17 +346,17 @@ export default function EmployeeDashboard() {
                       </button>
                     ) : t.status === 'in_progress' ? (
                       <button
-                        className="btn btn-sm btn-card-action"
+                        className={`btn btn-sm btn-card-action ${t.rework_required ? 'btn-warning' : ''}`}
                         onClick={() => setDetailTask(t)}
                       >
-                        📝 Hisobot / Yuborish
+                        {t.rework_required ? '🔄 Qayta ishlash & Yuborish' : '📝 Hisobot / Yuborish'}
                       </button>
                     ) : t.status === 'submitted' ? (
                       <button
                         className="btn btn-sm btn-warning btn-card-action"
                         onClick={() => setDetailTask(t)}
                       >
-                        Jarayonda / Tasdiqda
+                        ⏳ Rahbar tasdig‘ida
                       </button>
                     ) : (
                       <button

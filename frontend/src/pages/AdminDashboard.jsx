@@ -6,6 +6,7 @@ import TaskModal from '../components/TaskModal';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { useToast } from '../components/Toast';
 import { taskApi, userApi } from '../api/endpoints';
+import { formatDateTime } from '../utils/date';
 
 const PAGE_SIZE = 8;
 
@@ -264,6 +265,7 @@ export default function AdminDashboard() {
                 <option value="pending">Kutilmoqda</option>
                 <option value="in_progress">Ko‘rildi</option>
                 <option value="submitted">Jarayonda (rahbar tasdig‘ida)</option>
+                <option value="rework">Qayta ishlovda</option>
                 <option value="completed">Bajarildi</option>
               </select>
             </div>
@@ -274,7 +276,7 @@ export default function AdminDashboard() {
             <div className="field">
               <label>Saralash</label>
               <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="created_at">Eng yangilar</option>
+                <option value="created_at">Eng so‘nggi berilganlar (yangi birinchi)</option>
                 <option value="due_date">Muddati bo‘yicha</option>
                 <option value="status">Holati bo‘yicha</option>
                 <option value="title">Sarlavha bo‘yicha</option>
@@ -301,7 +303,7 @@ export default function AdminDashboard() {
                   <th>Vazifa</th>
                   <th>Biriktirilgan</th>
                   <th>Holati</th>
-                  <th>Bajarish muddati</th>
+                  <th>Topshirilgan vaqt / Muddat</th>
                   <th className="right">Amal</th>
                 </tr>
               </thead>
@@ -374,18 +376,28 @@ export default function AdminDashboard() {
                       <td><StatusBadge status={t.status} reworkRequired={t.rework_required} /></td>
                       <td>
                         <div className="table-date-cell">
-                          <span>{t.due_date ? t.due_date.replace('T', ' ').slice(0, 16) : '—'}</span>
-                          {t.created_at && (
-                            <span className="table-created-sub">
-                              Yaratildi: {new Date(t.created_at).toLocaleDateString('uz-UZ')}
-                            </span>
-                          )}
+                          <div className="table-date-line created" title="Topshiriq berilgan vaqt">
+                            <span className="date-icon">🕒</span>
+                            <span className="date-tag-label">Berildi:</span>
+                            <strong className="date-tag-val">{formatDateTime(t.created_at)}</strong>
+                          </div>
+                          <div className="table-date-line due" title="Bajarish muddati">
+                            <span className="date-icon">📅</span>
+                            <span className="date-tag-label">Muddat:</span>
+                            <span className="date-tag-val">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">Muddatsiz</span>}</span>
+                          </div>
                         </div>
                       </td>
                       <td className="right">
-                        <button className="btn btn-sm btn-outline-accent mr-1" onClick={() => setDetailTask(t)} title="Topshiriq va hisobotni ko‘rish">
-                          Ko‘rish
-                        </button>
+                        {t.status === 'submitted' ? (
+                          <button className="btn btn-sm btn-warning mr-1" onClick={() => setDetailTask(t)} title="Xodim hisobot topshirdi — tasdiqlash uchun bosing">
+                            ⏳ Tasdiqlash
+                          </button>
+                        ) : (
+                          <button className="btn btn-sm btn-outline-accent mr-1" onClick={() => setDetailTask(t)} title="Topshiriq va hisobotni ko‘rish">
+                            Ko‘rish
+                          </button>
+                        )}
                         <button className="btn btn-sm" onClick={() => openEdit(t)}>
                           Tahrirlash
                         </button>
@@ -454,14 +466,24 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                     <div className="task-meta-item">
-                      <span className="meta-label">Muddati:</span>
-                      <span className="meta-value">{t.due_date ? t.due_date.replace('T', ' ').slice(0, 16) : <span className="muted">—</span>}</span>
+                      <span className="meta-label">🕒 Berilgan:</span>
+                      <span className="meta-value font-medium">{formatDateTime(t.created_at)}</span>
+                    </div>
+                    <div className="task-meta-item">
+                      <span className="meta-label">📅 Muddati:</span>
+                      <span className="meta-value">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">—</span>}</span>
                     </div>
                   </div>
                   <div className="task-card-actions">
-                    <button className="btn btn-sm btn-outline-accent mr-1" onClick={() => setDetailTask(t)} title="Topshiriq va hisobotni ko‘rish">
-                      Ko‘rish
-                    </button>
+                    {t.status === 'submitted' ? (
+                      <button className="btn btn-sm btn-warning mr-1" onClick={() => setDetailTask(t)} title="Hisobotni ko‘rish va tasdiqlash">
+                        ⏳ Tasdiqlash
+                      </button>
+                    ) : (
+                      <button className="btn btn-sm btn-outline-accent mr-1" onClick={() => setDetailTask(t)} title="Topshiriq va hisobotni ko‘rish">
+                        Ko‘rish
+                      </button>
+                    )}
                     <button className="btn btn-sm btn-card-action" onClick={() => openEdit(t)}>
                       Tahrirlash
                     </button>

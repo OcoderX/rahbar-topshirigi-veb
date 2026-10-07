@@ -245,26 +245,59 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
   text-transform: capitalize; white-space: nowrap; flex-shrink: 0;
 }
 .badge .pip { width: 6px; height: 6px; border-radius: 50%; }
-.badge.completed   { background: var(--ok-wash);   color: var(--ok); }
-.badge.completed .pip { background: var(--ok); }
-.badge.pending { background: #fde7e3; color: #a93226; }
-.badge.pending .pip { background: #c0392b; }
-.badge.in_progress { background: var(--pend-wash); color: var(--pend); }
-.badge.in_progress .pip { background: var(--pend); }
-.badge.submitted,
-.badge.rework { background: var(--warn-wash); color: var(--warn); }
-.badge.submitted .pip,
-.badge.rework .pip { background: var(--warn); }
-.badge.role        { background: var(--accent-wash); color: var(--accent-deep); }
+.badge.pending {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.badge.pending .pip {
+  background: #ef4444;
+}
+.badge.in_progress {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.badge.in_progress .pip {
+  background: #64748b;
+}
+.badge.submitted {
+  background: #fef9c3;
+  color: #a16207;
+  border: 1px solid #fef08a;
+}
+.badge.submitted .pip {
+  background: #eab308;
+}
+.badge.completed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.badge.completed .pip {
+  background: #22c55e;
+}
+.badge.rework {
+  background: #fef9c3;
+  color: #a16207;
+  border: 1px solid #fef08a;
+}
+.badge.rework .pip {
+  background: #eab308;
+}
+.badge.role {
+  background: var(--accent-wash);
+  color: var(--accent-deep);
+}
 
 .rework-notice {
   margin-bottom: 1rem;
   padding: .9rem 1rem;
-  border: 1px solid #efb1a8;
-  border-left: 4px solid #c0392b;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
   border-radius: var(--radius-s);
-  background: #fff1ef;
-  color: #7b241c;
+  background: #fffbeb;
+  color: #92400e;
 }
 .rework-notice.is-resolved {
   border-color: #e2c98d;
@@ -305,7 +338,7 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
 
 /* ── mobile task card view (< 768px) ───────────────────────────────── */
 .desktop-only { display: block; }
-.mobile-only { display: none; }
+.mobile-only { display: none !important; }
 
 .task-card-list { display: flex; flex-direction: column; gap: .85rem; margin-bottom: 1rem; }
 .task-card {
@@ -553,6 +586,7 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
   /* Toggle desktop vs mobile views */
   .desktop-only { display: none !important; }
   .mobile-only { display: block !important; }
+  .mobile-only.task-card-list { display: flex !important; }
 
   /* Input zoom prevention on iOS (crucial: font-size >= 16px) */
   .input, .select, .textarea {
@@ -1660,10 +1694,38 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
 .table-date-cell {
   display: flex;
   flex-direction: column;
-  gap: .15rem;
+  gap: .28rem;
+  font-size: .82rem;
+  line-height: 1.35;
+}
+.table-date-line {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  white-space: nowrap;
+}
+.table-date-line.created {
+  color: var(--ink-base);
+}
+.table-date-line.created .date-tag-val {
+  font-weight: 600;
+  color: var(--ink);
+}
+.table-date-line.due {
+  color: var(--ink-faint);
+  font-size: .78rem;
+}
+.table-date-line .date-icon {
+  font-size: .8rem;
+  opacity: .85;
+}
+.table-date-line .date-tag-label {
+  color: var(--ink-faint);
+  font-weight: 500;
+  font-size: .74rem;
 }
 .table-created-sub {
-  font-size: .72rem;
+  font-size: .74rem;
   color: var(--ink-faint);
 }
 
@@ -2153,13 +2215,25 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
   color: var(--ink);
 }
 .btn-file-download {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
   font-size: .75rem;
   color: var(--accent);
+  background: transparent;
+  border: none;
+  padding: 0;
   text-decoration: none;
   font-weight: 600;
+  cursor: pointer;
+  text-align: left;
 }
 .btn-file-download:hover {
   text-decoration: underline;
+}
+.btn-file-download:disabled {
+  opacity: .6;
+  cursor: wait;
 }
 
 /* ── Completed Report Card ───────────────────────────────────────────── */
@@ -2226,4 +2300,59 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
   font-size: .92rem;
   font-weight: 700;
   margin-top: .4rem;
+}
+
+.btn-warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+.btn-warning:hover {
+  background: #fde68a;
+  color: #78350f;
+  border-color: #fcd34d;
+}
+
+.btn-rework {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  font-weight: 600;
+}
+.btn-rework:hover {
+  background: #ffe4e6;
+  color: #9f1239;
+  border-color: #fda4af;
+}
+
+.rework-actions {
+  margin-top: 1rem;
+  padding-top: .85rem;
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+.review-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  flex-wrap: wrap;
+}
+.rework-form {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  padding: .85rem 1rem;
+  border-radius: 8px;
+}
+.rework-form label {
+  font-size: .8rem;
+  font-weight: 700;
+  color: #991b1b;
+}
+.rework-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
 }

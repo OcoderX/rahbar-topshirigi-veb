@@ -3,17 +3,12 @@ import VoiceRecorder from './VoiceRecorder';
 import AttachmentPicker from './AttachmentPicker';
 import StatusBadge from './StatusBadge';
 import { taskApi } from '../api/endpoints';
+import { formatDateTime } from '../utils/date';
+import { useToast } from './Toast';
+import { downloadAttachment } from '../utils/fileDownloader';
 
 function formatDate(isoStr) {
-  if (!isoStr) return '—';
-  const d = new Date(isoStr);
-  const pad = (n) => String(n).padStart(2, '0');
-  const day = pad(d.getDate());
-  const month = pad(d.getMonth() + 1);
-  const year = d.getFullYear();
-  const hour = pad(d.getHours());
-  const min = pad(d.getMinutes());
-  return `${day}.${month}.${year} ${hour}:${min}`;
+  return formatDateTime(isoStr);
 }
 
 function getFileIcon(name = '', type = '') {
@@ -28,6 +23,7 @@ function getFileIcon(name = '', type = '') {
 }
 
 export default function TaskDetailModal({ task: initialTask, isEmployee = false, onClose, onTaskUpdated }) {
+  const { push } = useToast();
   const [task, setTask] = useState(initialTask);
   const [reportNote, setReportNote] = useState(initialTask?.completion_note || '');
   const [reportAudio, setReportAudio] = useState(initialTask?.completion_audio || '');
@@ -38,8 +34,24 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
   const [reworkSubmitting, setReworkSubmitting] = useState(false);
   const [approving, setApproving] = useState(false);
   const [playingAudio, setPlayingAudio] = useState(null); // url of currently playing audio
+  const [downloadingFile, setDownloadingFile] = useState(null);
 
   const audioRefs = useRef({});
+
+  async function handleDownload(att) {
+    if (!att) return;
+    setDownloadingFile(att.name);
+    try {
+      const res = await downloadAttachment(att);
+      if (res?.success) {
+        push(`Fayl saqlandi: ${res.filename}`);
+      }
+    } catch (err) {
+      push(err.message || 'Faylni yuklab olishda xatolik yuz berdi', 'error');
+    } finally {
+      setDownloadingFile(null);
+    }
+  }
 
   // When an employee opens a pending task, automatically mark it as viewed / in_progress!
   useEffect(() => {
@@ -170,7 +182,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                 </span>
               )}
               <span className="detail-meta-date">
-                Yaratilgan: <strong>{formatDate(task.created_at)}</strong>
+                Topshiriq berilgan: <strong>{formatDate(task.created_at)}</strong>
               </span>
             </div>
             <h2 className="detail-title">{task.title}</h2>
@@ -191,6 +203,14 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                 {task.assignee_position && ` (${task.assignee_position})`}
               </span>
             </div>
+            {task.created_at && (
+              <div className="timeline-item">
+                <span className="t-label">Topshiriq berilgan vaqt:</span>
+                <span className="t-val">
+                  <strong>{formatDate(task.created_at)}</strong>
+                </span>
+              </div>
+            )}
             <div className="timeline-item">
               <span className="t-label">Bajarish muddati:</span>
               <span className="t-val deadline-val">
@@ -289,9 +309,15 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                       )}
                       <div className="detail-file-info">
                         <span className="detail-file-name" title={att.name}>{att.name}</span>
-                        <a href={att.url} download={att.name} target="_blank" rel="noreferrer" className="btn-file-download">
-                          Yuklab olish ⬇
-                        </a>
+                        <button
+                          type="button"
+                          className="btn-file-download"
+                          onClick={() => handleDownload(att)}
+                          disabled={downloadingFile === att.name}
+                          title="Faylni o‘z nomida va formatida kompyuterga saqlash"
+                        >
+                          {downloadingFile === att.name ? 'Saqlanmoqda…' : 'Yuklab olish ⬇'}
+                        </button>
                       </div>
                     </div>
                   );
@@ -306,7 +332,9 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
               <div className="detail-section-title green-title">
                 {isCompleted
                   ? '✓ Xodimning ijro hisoboti (Topshiriq bajarilgan)'
-                  : 'Oldingi topshirilgan ijro hisoboti'}
+                  : task.rework_required
+                    ? '⚠️ Qaytarilgan oldingi hisobot'
+                    : 'Oldingi topshirilgan ijro hisoboti'}
               </div>
               {task.completion_note && (
                 <p className="completion-note-text">«{task.completion_note}»</p>
@@ -339,9 +367,15 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                         <div className="file-icon-box">{getFileIcon(att.name, att.type)}</div>
                         <div className="detail-file-info">
                           <span className="detail-file-name" title={att.name}>{att.name}</span>
-                          <a href={att.url} download={att.name} target="_blank" rel="noreferrer" className="btn-file-download">
-                            Yuklab olish ⬇
-                          </a>
+                          <button
+                            type="button"
+                            className="btn-file-download"
+                            onClick={() => handleDownload(att)}
+                            disabled={downloadingFile === att.name}
+                            title="Faylni o‘z nomida va formatida kompyuterga saqlash"
+                          >
+                            {downloadingFile === att.name ? 'Saqlanmoqda…' : 'Yuklab olish ⬇'}
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -413,15 +447,23 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
           {task.status === 'in_progress' && isEmployee && (
             <div className="detail-section execution-form-box">
               <div className="detail-section-title">
-                📝 Ijro hisobotini rahbar tasdig‘iga yuborish
+                {task.rework_required
+                  ? '🔄 Qayta ishlangan hisobot va yangi fayllarni jo‘natish'
+                  : '📝 Ijro hisobotini rahbar tasdig‘iga yuborish'}
               </div>
               <p className="sub-text">
-                Natija fayllari va izohni biriktirib, rahbar tasdig‘iga yuboring. Rahbar tasdiqlagandan keyingina topshiriq bajarilgan hisoblanadi.
+                {task.rework_required
+                  ? 'Rahbar ko‘rsatgan kamchiliklarni to‘g‘rilab, yangi/tuzatilgan fayllar, izoh yoki ovozli xabarni biriktiring va qayta yuboring.'
+                  : 'Natija fayllari va izohni biriktirib, rahbar tasdig‘iga yuboring. Rahbar tasdiqlagandan keyingina topshiriq bajarilgan hisoblanadi.'}
               </p>
 
               <div className="field">
                 <div className="field-head-with-action">
-                  <label>Ijro to‘g‘risida izoh (hisobot)</label>
+                  <label>
+                    {task.rework_required
+                      ? 'Tuzatilgan ijro izohi (hisobot)'
+                      : 'Ijro to‘g‘risida izoh (hisobot)'}
+                  </label>
                   <VoiceRecorder
                     audioUrl={reportAudio}
                     onAudioChange={(url) => setReportAudio(url || '')}
@@ -440,7 +482,11 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                 <AttachmentPicker
                   attachments={reportAttachments}
                   onChange={setReportAttachments}
-                  label="Natija fayllari (Excel hisobot, PDF dalolatnoma, Rasm, Video)"
+                  label={
+                    task.rework_required
+                      ? 'Yangi / to‘g‘rilangan natija fayllari (Excel, PDF, Rasm, Video)'
+                      : 'Natija fayllari (Excel hisobot, PDF dalolatnoma, Rasm, Video)'
+                  }
                 />
               </div>
 
@@ -450,7 +496,11 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                 onClick={handleComplete}
                 disabled={submitting}
               >
-                {submitting ? 'Yuborilmoqda…' : 'Rahbar tasdig‘iga yuborish'}
+                {submitting
+                  ? 'Yuborilmoqda…'
+                  : task.rework_required
+                    ? '🔄 Qayta ishlangan hisobotni jo‘natish'
+                    : 'Rahbar tasdig‘iga yuborish'}
               </button>
             </div>
           )}

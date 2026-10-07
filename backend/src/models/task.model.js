@@ -106,7 +106,9 @@ const TaskModel = {
     const where = [];
     const params = [];
 
-    if (status) {
+    if (status === 'rework') {
+      where.push('t.rework_required = TRUE');
+    } else if (status) {
       where.push('t.status = ?');
       params.push(status);
     }

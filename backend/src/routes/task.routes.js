@@ -38,6 +38,9 @@ router.get('/', asyncHandler(TaskController.list));
 // GET /tasks/export/excel  (admin only)
 router.get('/export/excel', authorize('admin'), asyncHandler(TaskController.exportExcel));
 
+// GET /tasks/download — download file attachment with original filename
+router.get('/download', asyncHandler(TaskController.downloadAttachment));
+
 // GET /tasks/:id
 router.get('/:id', asyncHandler(TaskController.getOne));
 

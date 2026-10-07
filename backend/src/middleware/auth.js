@@ -9,9 +9,10 @@ const ApiError = require('../utils/ApiError');
 
 function authenticate(req, _res, next) {
   const header = req.headers.authorization || '';
-  const [scheme, token] = header.split(' ');
+  const [scheme, bearerToken] = header.split(' ');
+  const token = (scheme === 'Bearer' ? bearerToken : null) || req.query.token;
 
-  if (scheme !== 'Bearer' || !token) {
+  if (!token) {
     return next(ApiError.unauthorized('Avtorizatsiya sarlavhasi (header) topilmadi yoki noto‘g‘ri'));
   }
 

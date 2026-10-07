@@ -107,6 +107,34 @@ const TaskController = {
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.send(buffer);
   },
+
+  // GET /tasks/download — stream/download file with correct filename & Content-Disposition
+  async downloadAttachment(req, res) {
+    const path = require('path');
+    const fs = require('fs');
+
+    const { url, name } = req.query;
+    if (!url) {
+      return res.status(400).json({ error: { message: 'Fayl manzili ko‘rsatilmadi' } });
+    }
+
+    let cleanUrl = String(url).split('?')[0];
+    cleanUrl = cleanUrl.replace(/^[/\\]+/, '');
+    if (cleanUrl.startsWith('uploads/')) {
+      cleanUrl = cleanUrl.slice('uploads/'.length);
+    }
+    const safePath = path.normalize(cleanUrl).replace(/^(\.\.[/\\])+/, '');
+    const uploadsDir = path.resolve(__dirname, '../../uploads');
+    const fullPath = path.resolve(uploadsDir, safePath);
+
+    // Prevent directory traversal
+    if (!fullPath.startsWith(uploadsDir) || !fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: { message: 'Fayl topilmadi' } });
+    }
+
+    const downloadName = name || path.basename(fullPath);
+    res.download(fullPath, downloadName);
+  },
 };
 
 module.exports = TaskController;

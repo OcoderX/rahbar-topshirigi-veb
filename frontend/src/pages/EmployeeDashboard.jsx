@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { taskApi } from '../api/endpoints';
 import { formatDateTime } from '../utils/date';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 
 const STATUS_UZ = {
   pending: 'Kutilmoqda',

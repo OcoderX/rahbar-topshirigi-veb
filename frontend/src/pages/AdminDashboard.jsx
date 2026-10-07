@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast';
 import { taskApi, userApi } from '../api/endpoints';
 import { formatDateTime } from '../utils/date';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 
 export default function AdminDashboard() {
   const { push } = useToast();

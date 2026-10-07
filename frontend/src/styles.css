@@ -234,6 +234,82 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em
 .stat-label-short { display: none; }
 .stat-label-full { display: inline; }
 
+.clickable-stat-card {
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background-color .15s ease;
+  user-select: none;
+  position: relative;
+}
+.clickable-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--accent);
+}
+.clickable-stat-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent), 0 4px 14px rgba(196, 80, 42, 0.15);
+  background: #ffffff;
+}
+.clickable-stat-card.active .n {
+  color: var(--accent);
+}
+.clickable-stat-card.active .bar i {
+  background: var(--accent);
+  width: 100% !important;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+}
+.section-desc {
+  font-size: .83rem;
+  color: var(--ink-faint);
+  margin: .25rem 0 0;
+}
+.pos-badge {
+  display: inline-block;
+  padding: .2rem .55rem;
+  background: var(--pend-wash);
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.district-pill {
+  font-size: .8rem;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.region-pill {
+  font-size: .8rem;
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+.role-pill {
+  display: inline-block;
+  padding: .15rem .5rem;
+  border-radius: 4px;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.role-pill.admin {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.role-pill.employee {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
 /* ── table (Desktop View) ─────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table.tasks { width: 100%; border-collapse: collapse; font-size: .9rem; }

@@ -165,9 +165,24 @@ const TaskModel = {
       params
     );
 
+    const countsRows = await query(`SELECT status, COUNT(*) AS count FROM tasks GROUP BY status`);
+    const statusCounts = {
+      total: 0,
+      pending: 0,
+      in_progress: 0,
+      submitted: 0,
+      completed: 0,
+    };
+    countsRows.forEach((r) => {
+      if (statusCounts[r.status] !== undefined) {
+        statusCounts[r.status] = Number(r.count);
+      }
+      statusCounts.total += Number(r.count);
+    });
+
     const data = rows.map(parseTask);
 
-    return { data, total, page: safePage, limit: safeLimit };
+    return { data, total, page: safePage, limit: safeLimit, statusCounts };
   },
 
   async update(id, fields) {

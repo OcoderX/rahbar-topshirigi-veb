@@ -12,13 +12,13 @@ const STATUSES = [
   { value: 'completed', label: 'Bajarildi / Rahbar tasdiqlagan' },
 ];
 
-export default function TaskModal({ task, employees, onClose, onSubmit }) {
+export default function TaskModal({ task, initialAssignee, employees, onClose, onSubmit }) {
   const isEdit = Boolean(task);
 
   const [form, setForm] = useState({
     title: '',
     description: '',
-    assigned_to: [],
+    assigned_to: initialAssignee ? [initialAssignee] : [],
     status: 'pending',
     due_date: '',
     audio_url: '',
@@ -40,8 +40,13 @@ export default function TaskModal({ task, employees, onClose, onSubmit }) {
         audio_url: task.audio_url || '',
         attachments: Array.isArray(task.attachments) ? task.attachments : [],
       });
+    } else if (initialAssignee) {
+      setForm((f) => ({
+        ...f,
+        assigned_to: [initialAssignee],
+      }));
     }
-  }, [task]);
+  }, [task, initialAssignee]);
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));

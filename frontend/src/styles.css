@@ -311,16 +311,135 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em
 }
 
 /* ── table (Desktop View) ─────────────────────────────────────────── */
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table.tasks { width: 100%; border-collapse: collapse; font-size: .9rem; }
-table.tasks th {
-  text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--ink-faint); font-weight: 700; padding: .7rem .9rem; border-bottom: 1px solid var(--line);
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: .25rem 0; }
+table.tasks {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 9px;
+  font-size: .9rem;
 }
-table.tasks td { padding: .85rem .9rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
-table.tasks tr:last-child td { border-bottom: none; }
-table.tasks tr:hover td { background: rgba(196,80,42,.03); }
-.task-title { font-weight: 600; }
+table.tasks th {
+  text-align: left;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-faint);
+  font-weight: 700;
+  padding: .35rem 1rem;
+  border-bottom: none;
+}
+table.tasks td {
+  padding: .92rem 1rem;
+  vertical-align: middle;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+table.tasks td[colspan] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 1.5rem 1rem;
+}
+
+/* ── Boxed Row Structure ──────────────────────────────────────────── */
+.task-row {
+  transition: transform .15s ease;
+}
+.task-row td {
+  background: var(--task-bg, #ffffff);
+  border-top: 1px solid var(--task-border, var(--line));
+  border-bottom: 1px solid var(--task-border, var(--line));
+}
+.task-row td:first-child {
+  border-left: 4px solid var(--task-accent, var(--line-strong));
+  border-top-left-radius: 9px;
+  border-bottom-left-radius: 9px;
+}
+.task-row td:last-child {
+  border-right: 1px solid var(--task-border, var(--line));
+  border-top-right-radius: 9px;
+  border-bottom-right-radius: 9px;
+}
+
+.task-row:hover {
+  transform: translateY(-1.5px);
+}
+.task-row:hover td {
+  background: var(--task-hover-bg, #ffffff);
+  border-top-color: var(--task-hover-border, var(--task-border, var(--line)));
+  border-bottom-color: var(--task-hover-border, var(--task-border, var(--line)));
+  box-shadow: var(--task-hover-shadow, 0 4px 14px rgba(0, 0, 0, 0.05));
+}
+.task-row:hover td:first-child {
+  border-left-color: var(--task-accent, var(--line-strong));
+}
+.task-row:hover td:last-child {
+  border-right-color: var(--task-hover-border, var(--task-border, var(--line)));
+}
+
+/* ── Status-Specific Ambient Box Colors ("bilinar-bilinmas") ────────── */
+
+/* 1. Bajarildi (Completed) — nozik yashilrang pastel fon va zumrad chiziq */
+.task-status-completed {
+  --task-bg: #f4fbf7;
+  --task-border: #c3ebd5;
+  --task-accent: #10b981;
+  --task-hover-bg: #eaf8f0;
+  --task-hover-border: #86efac;
+  --task-hover-shadow: 0 4px 16px rgba(16, 185, 129, 0.10);
+}
+
+/* 2. Jarayonda (Submitted) — nozik iliq oltin/amber pastel fon va to'q sariq chiziq */
+.task-status-submitted {
+  --task-bg: #fffdf5;
+  --task-border: #fce8b3;
+  --task-accent: #f59e0b;
+  --task-hover-bg: #fff9e6;
+  --task-hover-border: #fcd34d;
+  --task-hover-shadow: 0 4px 16px rgba(245, 158, 11, 0.10);
+}
+
+/* 3. Ko'rildi (In Progress) — nozik ko'kish/moviy pastel fon va moviy chiziq */
+.task-status-in_progress {
+  --task-bg: #f6fafe;
+  --task-border: #d2e7f8;
+  --task-accent: #0ea5e9;
+  --task-hover-bg: #eef6fd;
+  --task-hover-border: #7dd3fc;
+  --task-hover-shadow: 0 4px 16px rgba(14, 165, 233, 0.09);
+}
+
+/* 4. Kutilmoqda (Pending) — nozik issiq neytral fon va terracotta chiziq */
+.task-status-pending {
+  --task-bg: #fcf9f7;
+  --task-border: #f1dfd8;
+  --task-accent: #c4502a;
+  --task-hover-bg: #f8f1ed;
+  --task-hover-border: #e6c8bd;
+  --task-hover-shadow: 0 4px 14px rgba(196, 80, 42, 0.08);
+}
+
+/* 5. Qayta ishlovda (Rework) — nozik pushti/qizg'ish fon va qizil chiziq */
+.task-status-rework {
+  --task-bg: #fef6f6;
+  --task-border: #fcd7d7;
+  --task-accent: #ef4444;
+  --task-hover-bg: #fdeeee;
+  --task-hover-border: #fca5a5;
+  --task-hover-shadow: 0 4px 16px rgba(239, 68, 68, 0.10);
+}
+
+/* 6. Akkauntlar jadvali qatorlari */
+.account-row {
+  --task-bg: #ffffff;
+  --task-border: var(--line);
+  --task-accent: var(--accent);
+  --task-hover-bg: #fcfbf9;
+  --task-hover-border: var(--line-strong);
+  --task-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.task-title { font-weight: 600; font-size: .94rem; }
 .task-desc { color: var(--ink-faint); font-size: .8rem; margin-top: .15rem; max-width: 320px; }
 
 /* ── badges ────────────────────────────────────────────────────────── */
@@ -427,18 +546,23 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
 
 .task-card-list { display: flex; flex-direction: column; gap: .85rem; margin-bottom: 1rem; }
 .task-card {
-  background: var(--paper-raised);
-  border: 1px solid var(--line);
+  background: var(--task-bg, var(--paper-raised));
+  border: 1px solid var(--task-border, var(--line));
+  border-left: 4.5px solid var(--task-accent, var(--line-strong));
   border-radius: var(--radius-s);
   padding: 1rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   gap: .65rem;
-  transition: transform .08s ease, box-shadow .15s ease, border-color .15s ease;
+  transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
 }
 .task-card:active {
   transform: scale(0.995);
+}
+.task-card:hover {
+  background: var(--task-hover-bg, var(--task-bg, var(--paper-raised)));
+  box-shadow: var(--task-hover-shadow, 0 4px 14px rgba(0, 0, 0, 0.06));
 }
 .task-card-header {
   display: flex;
@@ -1797,17 +1921,40 @@ table.tasks tr:hover td { background: rgba(196,80,42,.03); }
   color: var(--ink);
 }
 .table-date-line.due {
-  color: var(--ink-faint);
-  font-size: .78rem;
+  color: var(--ink);
+  font-size: .81rem;
+}
+.table-date-line.due .date-tag-val {
+  font-weight: 600;
+  color: var(--ink);
+}
+.table-date-line.remaining {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .8rem;
+  margin-top: .1rem;
+}
+.date-remaining-black {
+  color: #111827; /* deep bold black */
+  font-weight: 700;
+  font-size: .81rem;
+  letter-spacing: -0.01em;
+}
+.table-date-line.remaining.overdue .date-remaining-black {
+  color: #dc2626;
+}
+.table-date-line.remaining.completed .date-remaining-black {
+  color: #16a34a;
 }
 .table-date-line .date-icon {
-  font-size: .8rem;
-  opacity: .85;
+  font-size: .82rem;
+  opacity: .95;
 }
 .table-date-line .date-tag-label {
   color: var(--ink-faint);
   font-weight: 500;
-  font-size: .74rem;
+  font-size: .75rem;
 }
 .table-created-sub {
   font-size: .74rem;

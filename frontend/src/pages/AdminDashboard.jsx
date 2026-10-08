@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
-import StatusBadge from '../components/StatusBadge';
+import StatusBadge, { getTaskStatusClass } from '../components/StatusBadge';
 import Pagination from '../components/Pagination';
 import TaskModal from '../components/TaskModal';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { useToast } from '../components/Toast';
 import { taskApi, userApi } from '../api/endpoints';
-import { formatDateTime } from '../utils/date';
+import { formatDateTime, getRemainingTime } from '../utils/date';
 
 const PAGE_SIZE = 20;
 
@@ -494,7 +494,7 @@ export default function AdminDashboard() {
                     </tr>
                   ) : (
                     paginatedAccounts.map((acc) => (
-                      <tr key={acc.id}>
+                      <tr key={acc.id} className="task-row account-row">
                         <td>
                           <div className="table-assignee-cell">
                             <div className="table-assignee-avatar">
@@ -569,7 +569,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 paginatedAccounts.map((acc) => (
-                  <div className="task-card" key={acc.id}>
+                  <div className="task-card account-card" key={acc.id}>
                     <div className="task-card-header">
                       <div className="table-assignee-cell">
                         <div className="table-assignee-avatar">
@@ -710,7 +710,7 @@ export default function AdminDashboard() {
                     </tr>
                   ) : (
                     tasks.map((t) => (
-                      <tr key={t.id}>
+                      <tr key={t.id} className={`task-row ${getTaskStatusClass(t)}`}>
                         <td>
                           <div className="task-title-row">
                             <span className="task-title clickable-title" onClick={() => setDetailTask(t)}>
@@ -767,8 +767,21 @@ export default function AdminDashboard() {
                             <div className="table-date-line due" title="Bajarish muddati">
                               <span className="date-icon">📅</span>
                               <span className="date-tag-label">Muddat:</span>
-                              <span className="date-tag-val">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">Muddatsiz</span>}</span>
+                              <strong className="date-tag-val">{t.due_date ? formatDateTime(t.due_date) : <span className="muted font-normal">Muddatsiz</span>}</strong>
                             </div>
+                            {t.due_date && (() => {
+                              const rem = getRemainingTime(t.due_date, t.status);
+                              if (!rem) return null;
+                              return (
+                                <div
+                                  className={`table-date-line remaining ${rem.isOverdue ? 'overdue' : ''} ${rem.isCompleted ? 'completed' : ''}`}
+                                  title="Muddati bo‘yicha qolgan vaqt"
+                                >
+                                  <span className="date-icon">{rem.icon}</span>
+                                  <strong className="date-remaining-black">{rem.label}</strong>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="right">
@@ -805,7 +818,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 tasks.map((t) => (
-                  <div className="task-card" key={t.id}>
+                  <div className={`task-card ${getTaskStatusClass(t)}`} key={t.id}>
                     <div className="task-card-header">
                       <div className="task-title-row">
                         <div className="task-card-title clickable-title" onClick={() => setDetailTask(t)}>
@@ -854,8 +867,20 @@ export default function AdminDashboard() {
                       </div>
                       <div className="task-meta-item">
                         <span className="meta-label">📅 Muddati:</span>
-                        <span className="meta-value">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">—</span>}</span>
+                        <strong className="meta-value" style={{ color: '#1c1a17' }}>{t.due_date ? formatDateTime(t.due_date) : <span className="muted font-normal">—</span>}</strong>
                       </div>
+                      {t.due_date && (() => {
+                        const rem = getRemainingTime(t.due_date, t.status);
+                        if (!rem) return null;
+                        return (
+                          <div className="task-meta-item">
+                            <span className="meta-label">{rem.icon} Qolgan vaqt:</span>
+                            <strong className="meta-value" style={{ color: rem.isOverdue ? '#dc2626' : rem.isCompleted ? '#16a34a' : '#111827', fontWeight: 700 }}>
+                              {rem.label}
+                            </strong>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="task-card-actions">
                       {t.status === 'submitted' ? (

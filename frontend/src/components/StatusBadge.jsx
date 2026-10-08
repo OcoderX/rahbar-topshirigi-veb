@@ -12,6 +12,14 @@ const TOOLTIPS = {
   completed: 'Bajarildi (Rahbar tasdiqlagan va yakunlangan)',
 };
 
+export function getTaskStatusClass(task) {
+  if (!task) return '';
+  if (task.rework_required && task.status === 'in_progress') {
+    return 'task-status-rework';
+  }
+  return `task-status-${task.status || 'pending'}`;
+}
+
 export default function StatusBadge({ status, reworkRequired = false }) {
   const isRework = reworkRequired && status === 'in_progress';
   return (

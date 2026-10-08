@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
-import StatusBadge from '../components/StatusBadge';
+import StatusBadge, { getTaskStatusClass } from '../components/StatusBadge';
 import Pagination from '../components/Pagination';
 import ProfileModal from '../components/ProfileModal';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { taskApi } from '../api/endpoints';
-import { formatDateTime } from '../utils/date';
+import { formatDateTime, getRemainingTime } from '../utils/date';
 
 const PAGE_SIZE = 20;
 
@@ -223,7 +223,7 @@ export default function EmployeeDashboard() {
                   </tr>
                 ) : (
                   tasks.map((t) => (
-                    <tr key={t.id}>
+                    <tr key={t.id} className={`task-row ${getTaskStatusClass(t)}`}>
                       <td>
                         <div className="task-title-row">
                           <span className="task-title clickable-title" onClick={() => setDetailTask(t)}>
@@ -250,8 +250,21 @@ export default function EmployeeDashboard() {
                           <div className="table-date-line due" title="Bajarish muddati">
                             <span className="date-icon">📅</span>
                             <span className="date-tag-label">Muddat:</span>
-                            <span className="date-tag-val">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">Muddatsiz</span>}</span>
+                            <strong className="date-tag-val">{t.due_date ? formatDateTime(t.due_date) : <span className="muted font-normal">Muddatsiz</span>}</strong>
                           </div>
+                          {t.due_date && (() => {
+                            const rem = getRemainingTime(t.due_date, t.status);
+                            if (!rem) return null;
+                            return (
+                              <div
+                                className={`table-date-line remaining ${rem.isOverdue ? 'overdue' : ''} ${rem.isCompleted ? 'completed' : ''}`}
+                                title="Bajarish uchun qolgan vaqt"
+                              >
+                                <span className="date-icon">{rem.icon}</span>
+                                <strong className="date-remaining-black">{rem.label}</strong>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="right">
@@ -309,7 +322,7 @@ export default function EmployeeDashboard() {
               </div>
             ) : (
               tasks.map((t) => (
-                <div className="task-card" key={t.id}>
+                <div className={`task-card ${getTaskStatusClass(t)}`} key={t.id}>
                   <div className="task-card-header">
                     <div className="task-title-row">
                       <div className="task-card-title clickable-title" onClick={() => setDetailTask(t)}>
@@ -333,8 +346,20 @@ export default function EmployeeDashboard() {
                     </div>
                     <div className="task-meta-item">
                       <span className="meta-label">📅 Bajarish muddati:</span>
-                      <span className="meta-value">{t.due_date ? formatDateTime(t.due_date) : <span className="muted">Muddatsiz</span>}</span>
+                      <strong className="meta-value" style={{ color: '#1c1a17' }}>{t.due_date ? formatDateTime(t.due_date) : <span className="muted font-normal">Muddatsiz</span>}</strong>
                     </div>
+                    {t.due_date && (() => {
+                      const rem = getRemainingTime(t.due_date, t.status);
+                      if (!rem) return null;
+                      return (
+                        <div className="task-meta-item">
+                          <span className="meta-label">{rem.icon} Qolgan vaqt:</span>
+                          <strong className="meta-value" style={{ color: rem.isOverdue ? '#dc2626' : rem.isCompleted ? '#16a34a' : '#111827', fontWeight: 700 }}>
+                            {rem.label}
+                          </strong>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="task-card-actions">
                     {t.status === 'pending' ? (

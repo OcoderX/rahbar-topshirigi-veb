@@ -30,6 +30,9 @@ function validateBody(rules) {
       if (rule.enum && !rule.enum.includes(value)) {
         errors.push(`${rule.field} must be one of: ${rule.enum.join(', ')}`);
       }
+      if (rule.minLength && String(value).length < rule.minLength) {
+        errors.push(`${rule.field} must be at least ${rule.minLength} characters`);
+      }
       if (rule.maxLength && String(value).length > rule.maxLength) {
         errors.push(`${rule.field} must be at most ${rule.maxLength} characters`);
       }

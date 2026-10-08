@@ -35,6 +35,10 @@ const AuthService = {
     const existing = await UserModel.findByEmail(email);
     if (existing) throw ApiError.conflict('Ushbu email allaqachon ro‘yxatdan o‘tgan');
 
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      throw ApiError.badRequest('Parol kamida 6 ta belgidan iborat bo‘lishi kerak');
+    }
+
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const user = await UserModel.create({
       name,

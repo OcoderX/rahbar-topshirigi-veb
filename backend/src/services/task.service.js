@@ -131,7 +131,7 @@ const TaskService = {
       throw ApiError.badRequest('Faqat rahbar tasdig‘idagi topshiriqni tasdiqlash mumkin');
     }
 
-    const updated = await TaskModel.approve(id);
+    const updated = await TaskModel.approve(id, actor.id);
     await ActivityLogModel.create({
       userId: actor.id,
       action: 'APPROVE_TASK',
@@ -188,22 +188,36 @@ const TaskService = {
       // Admins may edit any field
       if (fields.title !== undefined) updates.title = fields.title;
       if (fields.description !== undefined) updates.description = fields.description;
-      if (fields.status !== undefined) updates.status = fields.status;
+      if (fields.status !== undefined) {
+        updates.status = fields.status;
+        if (fields.status === 'completed' && !task.completed_at) {
+          updates.completed_at = new Date();
+          updates.approved_by = actor.id;
+        }
+      }
       if (fields.due_date !== undefined) updates.due_date = fields.due_date;
       if (fields.assigned_to !== undefined) updates.assigned_to = fields.assigned_to;
       if (fields.audio_url !== undefined) updates.audio_url = fields.audio_url;
       if (fields.attachments !== undefined) updates.attachments = fields.attachments;
     } else {
-      // Employees: only their own task, update status/completion
+      // Employees: only their own task, cannot mark 'completed' directly
       if (task.assigned_to !== actor.id) {
         throw ApiError.forbidden('Faqat o‘zingizga biriktirilgan vazifalarni o‘zgartira olasiz');
+      }
+      if (fields.status === 'completed') {
+        throw ApiError.forbidden(
+          'Topshiriqni to‘g‘ridan-to‘g‘ri yakunlash (bajarildi qilish) taqiqlangan. Hisobot yuboring, uni faqat rahbar tasdiqlaydi'
+        );
+      }
+      if (fields.status && fields.status !== 'in_progress' && fields.status !== 'submitted') {
+        throw ApiError.badRequest('Xodim faqat jarayonda yoki tasdiqqa yuborish holatini o‘rnatishi mumkin');
       }
       if (fields.status !== undefined) updates.status = fields.status;
       if (fields.completion_note !== undefined) updates.completion_note = fields.completion_note;
       if (fields.completion_audio !== undefined) updates.completion_audio = fields.completion_audio;
       if (fields.completion_attachments !== undefined) updates.completion_attachments = fields.completion_attachments;
-      if (fields.status === 'completed' && !task.completed_at) {
-        updates.completed_at = new Date();
+      if (fields.status === 'submitted' && !task.submitted_at) {
+        updates.submitted_at = new Date();
       }
     }
 
@@ -222,37 +236,115 @@ const TaskService = {
 
   /**
    * Save uploaded file or voice recording from base64 string.
+   * Whitelist enforced: jpg, png, xls, xlsx, pdf, doc, docx, ogg, mp3, mp4 (+ webp, wav, webm, txt).
+   * File size strictly capped at 20MB.
    */
   async saveAttachment({ file, name, type, size }) {
     if (!file || typeof file !== 'string') {
       throw ApiError.badRequest('Fayl ma’lumoti yuborilmadi');
     }
 
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+    const ALLOWED_EXTENSIONS = new Set([
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+      'xls',
+      'xlsx',
+      'pdf',
+      'doc',
+      'docx',
+      'ogg',
+      'opus',
+      'mp3',
+      'wav',
+      'mp4',
+      'webm',
+      'txt',
+    ]);
+
+    const DANGEROUS_EXTENSIONS = new Set([
+      'html',
+      'htm',
+      'xhtml',
+      'svg',
+      'js',
+      'mjs',
+      'cjs',
+      'exe',
+      'bat',
+      'cmd',
+      'sh',
+      'php',
+      'phtml',
+      'py',
+      'pl',
+      'jar',
+      'vbs',
+      'msi',
+      'com',
+    ]);
+
     let base64Data = file;
-    let ext = 'bin';
+    let detectedExt = null;
 
     if (file.startsWith('data:')) {
       const match = file.match(/^data:([^;]+);base64,(.+)$/);
       if (match) {
-        const mime = match[1];
+        const mime = match[1].toLowerCase();
         base64Data = match[2];
-        if (mime.includes('audio/ogg') || mime.includes('audio/opus')) ext = 'ogg';
-        else if (mime.includes('audio/webm')) ext = 'webm';
-        else if (mime.includes('audio/wav')) ext = 'wav';
-        else if (mime.includes('audio/mp3') || mime.includes('audio/mpeg')) ext = 'mp3';
-        else if (mime.includes('video/mp4')) ext = 'mp4';
-        else if (mime.includes('video/webm')) ext = 'webm';
-        else if (mime.includes('pdf')) ext = 'pdf';
-        else if (mime.includes('spreadsheetml') || mime.includes('excel')) ext = 'xlsx';
-        else if (mime.includes('jpeg') || mime.includes('jpg')) ext = 'jpg';
-        else if (mime.includes('png')) ext = 'png';
-        else if (mime.includes('webp')) ext = 'webp';
+
+        // Explicitly block dangerous types
+        if (
+          mime.includes('html') ||
+          mime.includes('svg') ||
+          mime.includes('javascript') ||
+          mime.includes('application/x-')
+        ) {
+          throw ApiError.badRequest('Xavfli fayl formati aniqlandi. Ushbu faylni yuklash taqiqlangan');
+        }
+
+        if (mime.includes('audio/ogg') || mime.includes('audio/opus')) detectedExt = 'ogg';
+        else if (mime.includes('audio/webm')) detectedExt = 'webm';
+        else if (mime.includes('audio/wav')) detectedExt = 'wav';
+        else if (mime.includes('audio/mp3') || mime.includes('audio/mpeg')) detectedExt = 'mp3';
+        else if (mime.includes('video/mp4')) detectedExt = 'mp4';
+        else if (mime.includes('video/webm')) detectedExt = 'webm';
+        else if (mime.includes('pdf')) detectedExt = 'pdf';
+        else if (mime.includes('spreadsheetml') || mime.includes('excel') || mime.includes('ms-excel')) detectedExt = 'xlsx';
+        else if (mime.includes('msword') || mime.includes('wordprocessingml')) detectedExt = 'docx';
+        else if (mime.includes('jpeg') || mime.includes('jpg')) detectedExt = 'jpg';
+        else if (mime.includes('png')) detectedExt = 'png';
+        else if (mime.includes('webp')) detectedExt = 'webp';
+        else if (mime.includes('text/plain')) detectedExt = 'txt';
       }
     }
 
+    let ext = detectedExt || 'bin';
+
     if (name && name.includes('.')) {
       const parts = name.split('.');
-      ext = parts[parts.length - 1].toLowerCase().replace(/[^a-z0-9]/g, '');
+      const rawExt = parts[parts.length - 1].toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      if (DANGEROUS_EXTENSIONS.has(rawExt)) {
+        throw ApiError.badRequest(`.${rawExt} kengaytmali xavfli fayllarni yuklash qat’iyan taqiqlangan`);
+      }
+      if (ALLOWED_EXTENSIONS.has(rawExt)) {
+        ext = rawExt;
+      }
+    }
+
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+      throw ApiError.badRequest(
+        'Ruxsat etilmagan fayl formati. Faqat quyidagi formatdagi fayllarga ruxsat berilgan: jpg, png, xls, xlsx, pdf, doc, docx, ogg, mp3, mp4'
+      );
+    }
+
+    const buffer = Buffer.from(base64Data, 'base64');
+    if (buffer.length > MAX_FILE_SIZE) {
+      throw ApiError.badRequest('Fayl hajmi 20MB dan oshmasligi kerak');
     }
 
     const safeBaseName = (name || 'fayl')
@@ -266,7 +358,6 @@ const TaskService = {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    const buffer = Buffer.from(base64Data, 'base64');
     const filePath = path.join(uploadsDir, filename);
     await fs.promises.writeFile(filePath, buffer);
 

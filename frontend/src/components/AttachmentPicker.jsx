@@ -25,9 +25,14 @@ export default function AttachmentPicker({ attachments = [], onChange, label = '
   async function handleFiles(files) {
     if (!files || !files.length) return;
 
+    const allowedExts = /\.(xlsx|xls|pdf|doc|docx|png|jpg|jpeg|webp|mp4|webm|ogg|mp3|wav|txt)$/i;
     const validFiles = Array.from(files).filter((file) => {
-      if (file.size > 25 * 1024 * 1024) {
-        alert(`${file.name} hajmi 25MB dan katta!`);
+      if (!allowedExts.test(file.name)) {
+        alert(`${file.name} — ruxsat etilmagan fayl formati! Faqat jpg, png, xls, xlsx, pdf, doc, docx, ogg, mp3, mp4 formatlariga ruxsat berilgan.`);
+        return false;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        alert(`${file.name} hajmi 20MB dan katta!`);
         return false;
       }
       return true;

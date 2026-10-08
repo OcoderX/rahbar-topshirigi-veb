@@ -144,7 +144,7 @@ export default function TaskModal({ task, initialAssignee, employees, onClose, o
   }
 
   return (
-    <div className="overlay" onMouseDown={onClose}>
+    <div className="overlay task-form-overlay" onMouseDown={onClose}>
       <div className="modal task-modal-lg" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>

@@ -2,8 +2,39 @@
  * User controller.
  */
 const UserService = require('../services/user.service');
+const TaskModel = require('../models/task.model');
 
 const UserController = {
+  // GET /users/:id — retrieve user profile & task statistics
+  async getById(req, res) {
+    const userId = Number(req.params.id);
+    const user = await UserService.getUserById(userId);
+    const statsResult = await TaskModel.findAll({ assignedTo: userId, limit: 1 });
+    res.json({
+      data: {
+        ...user,
+        statusCounts: statsResult.statusCounts,
+      },
+    });
+  },
+
+  // POST /users (admin only) — create new employee or admin user
+  async create(req, res) {
+    const { name, email, password, role, position, hierarchyRank, territoryType, region, district } = req.body;
+    const user = await UserService.createUser({
+      name,
+      email,
+      password,
+      role,
+      position,
+      hierarchyRank,
+      territoryType,
+      region,
+      district,
+    });
+    res.status(201).json({ data: user, message: 'Foydalanuvchi muvaffaqiyatli yaratildi' });
+  },
+
   // GET /users  (admin only) — optional ?role=employee or ?excludeRole=admin
   async list(req, res) {
     const { role, excludeRole } = req.query;

@@ -5,8 +5,9 @@ const AuthService = require('../services/auth.service');
 
 const AuthController = {
   async register(req, res) {
-    const { name, email, password, role } = req.body;
-    const result = await AuthService.register({ name, email, password, role });
+    const { name, email, password } = req.body;
+    // Public self-registration ALWAYS creates an employee account to prevent privilege escalation.
+    const result = await AuthService.register({ name, email, password, role: 'employee' });
     res.status(201).json(result);
   },
 

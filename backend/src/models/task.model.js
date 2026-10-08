@@ -67,6 +67,7 @@ const TaskModel = {
     const rows = await query(
       `SELECT t.id, t.title, t.description, t.status, t.due_date,
               t.audio_url, t.attachments, t.viewed_at, t.submitted_at, t.completed_at,
+              t.approved_by,
               t.completion_note, t.completion_audio, t.completion_attachments,
               t.rework_required, t.rework_reason, t.rework_requested_at,
               t.rework_requested_by, t.rework_count,
@@ -77,10 +78,18 @@ const TaskModel = {
               u.position AS assignee_position,
               u.avatar AS assignee_avatar,
               u.hierarchy_rank AS assignee_rank,
-              reviewer.name AS rework_requested_by_name
+              u.territory_type AS assignee_territory_type,
+              u.region AS assignee_region,
+              u.district AS assignee_district,
+              u.role AS assignee_role,
+              u.created_at AS assignee_created_at,
+              reviewer.name AS rework_requested_by_name,
+              approver.name AS approved_by_name,
+              approver.position AS approved_by_position
        FROM tasks t
        LEFT JOIN users u ON u.id = t.assigned_to
        LEFT JOIN users reviewer ON reviewer.id = t.rework_requested_by
+       LEFT JOIN users approver ON approver.id = t.approved_by
        WHERE t.id = ?
        LIMIT 1`,
       [id]
@@ -145,6 +154,7 @@ const TaskModel = {
     const rows = await query(
       `SELECT t.id, t.title, t.description, t.status, t.due_date,
               t.audio_url, t.attachments, t.viewed_at, t.submitted_at, t.completed_at,
+              t.approved_by,
               t.completion_note, t.completion_audio, t.completion_attachments,
               t.rework_required, t.rework_reason, t.rework_requested_at,
               t.rework_requested_by, t.rework_count,
@@ -155,23 +165,35 @@ const TaskModel = {
               u.position AS assignee_position,
               u.avatar AS assignee_avatar,
               u.hierarchy_rank AS assignee_rank,
-              reviewer.name AS rework_requested_by_name
+              u.territory_type AS assignee_territory_type,
+              u.region AS assignee_region,
+              u.district AS assignee_district,
+              u.role AS assignee_role,
+              u.created_at AS assignee_created_at,
+              reviewer.name AS rework_requested_by_name,
+              approver.name AS approved_by_name,
+              approver.position AS approved_by_position
        FROM tasks t
        LEFT JOIN users u ON u.id = t.assigned_to
        LEFT JOIN users reviewer ON reviewer.id = t.rework_requested_by
+       LEFT JOIN users approver ON approver.id = t.approved_by
        ${whereSql}
        ORDER BY t.${sortCol} ${sortDir}
        LIMIT ${safeLimit} OFFSET ${offset}`,
       params
     );
 
-    const countsRows = await query(`SELECT status, COUNT(*) AS count FROM tasks GROUP BY status`);
+    const countWhereSql = assignedTo ? 'WHERE assigned_to = ?' : '';
+    const countParams = assignedTo ? [assignedTo] : [];
+    const countsRows = await query(`SELECT status, COUNT(*) AS count FROM tasks ${countWhereSql} GROUP BY status`, countParams);
     const statusCounts = {
       total: 0,
       pending: 0,
       in_progress: 0,
       submitted: 0,
       completed: 0,
+      rework: 0,
+      completion_rate: 0,
     };
     countsRows.forEach((r) => {
       if (statusCounts[r.status] !== undefined) {
@@ -179,6 +201,11 @@ const TaskModel = {
       }
       statusCounts.total += Number(r.count);
     });
+
+    const reworkWhereSql = assignedTo ? 'WHERE rework_required = TRUE AND assigned_to = ?' : 'WHERE rework_required = TRUE';
+    const reworkRows = await query(`SELECT COUNT(*) AS count FROM tasks ${reworkWhereSql}`, countParams);
+    statusCounts.rework = Number(reworkRows[0]?.count || 0);
+    statusCounts.completion_rate = statusCounts.total > 0 ? Math.round((statusCounts.completed / statusCounts.total) * 100) : 0;
 
     const data = rows.map(parseTask);
 
@@ -260,14 +287,15 @@ const TaskModel = {
   },
 
   /** Manager approves a submitted result and completes the task. */
-  async approve(id) {
+  async approve(id, approvedBy = null) {
     await query(
       `UPDATE tasks
        SET status = 'completed',
            completed_at = NOW(),
+           approved_by = ?,
            rework_required = FALSE
        WHERE id = ?`,
-      [id]
+      [approvedBy || null, id]
     );
     return this.findById(id);
   },
@@ -278,6 +306,7 @@ const TaskModel = {
       `UPDATE tasks
        SET status = 'in_progress',
            completed_at = NULL,
+           approved_by = NULL,
            rework_required = TRUE,
            rework_reason = ?,
            rework_requested_at = NOW(),

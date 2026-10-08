@@ -17,6 +17,7 @@ export const authApi = {
 
 export const userApi = {
   list: (role) => client.get(`/users${qs({ role })}`).then((r) => r.data.data),
+  get: (id) => client.get(`/users/${id}`).then((r) => r.data.data),
   tasks: (id, params) => client.get(`/users/${id}/tasks${qs(params)}`).then((r) => r.data),
   updateProfile: (payload) => client.put('/users/profile', payload).then((r) => r.data),
 };

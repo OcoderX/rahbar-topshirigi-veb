@@ -6,14 +6,13 @@ const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
 
-// POST /auth/register
+// POST /auth/register — Public self-registration (always creates employee account)
 router.post(
   '/register',
   validateBody([
     { field: 'name', required: true, type: 'string', maxLength: 100 },
     { field: 'email', required: true, type: 'email' },
-    { field: 'password', required: true, type: 'string' },
-    { field: 'role', enum: ['admin', 'employee'] },
+    { field: 'password', required: true, type: 'string', minLength: 6, maxLength: 128 },
   ]),
   asyncHandler(AuthController.register)
 );

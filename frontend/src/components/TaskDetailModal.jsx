@@ -6,6 +6,7 @@ import { taskApi } from '../api/endpoints';
 import { formatDateTime } from '../utils/date';
 import { useToast } from './Toast';
 import { downloadAttachment } from '../utils/fileDownloader';
+import { triggerConfetti } from '../utils/confetti';
 
 function formatDate(isoStr) {
   return formatDateTime(isoStr);
@@ -52,6 +53,18 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
       setDownloadingFile(null);
     }
   }
+
+  // Keep task state in sync with initialTask and fetch fresh details
+  useEffect(() => {
+    setTask(initialTask);
+    if (initialTask?.id) {
+      taskApi.get(initialTask.id)
+        .then((fresh) => {
+          if (fresh) setTask(fresh);
+        })
+        .catch(() => {});
+    }
+  }, [initialTask]);
 
   // When an employee opens a pending task, automatically mark it as viewed / in_progress!
   useEffect(() => {
@@ -117,6 +130,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
       });
 
       setTask(res);
+      triggerConfetti({ count: 60 });
       if (onTaskUpdated) onTaskUpdated(res);
       onClose();
     } catch (err) {
@@ -152,6 +166,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
     try {
       const updated = await taskApi.approve(task.id);
       setTask(updated);
+      triggerConfetti({ count: 100 });
       if (onTaskUpdated) onTaskUpdated(updated);
     } catch (err) {
       alert(`Xatolik: ${err.message || ''}`);
@@ -169,7 +184,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
   );
 
   return (
-    <div className="overlay" onMouseDown={onClose}>
+    <div className="overlay task-detail-overlay" onMouseDown={onClose}>
       <div className="modal task-detail-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
@@ -230,10 +245,19 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
               </div>
             )}
             {task.completed_at && (
-              <div className="timeline-item">
-                <span className="t-label">Rahbar tasdiqlagan vaqt:</span>
-                <span className="t-val completed-time-val">{formatDate(task.completed_at)}</span>
-              </div>
+              <>
+                <div className="timeline-item">
+                  <span className="t-label">Tasdiqlagan rahbar:</span>
+                  <span className="t-val completed-approver-val">
+                    <strong>{task.approved_by_name || 'Rahbar'}</strong>
+                    {task.approved_by_position && ` (${task.approved_by_position})`}
+                  </span>
+                </div>
+                <div className="timeline-item">
+                  <span className="t-label">Rahbar tasdiqlagan vaqt:</span>
+                  <span className="t-val completed-time-val">{formatDate(task.completed_at)}</span>
+                </div>
+              </>
             )}
           </div>
 
@@ -336,6 +360,28 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                     ? '⚠️ Qaytarilgan oldingi hisobot'
                     : 'Oldingi topshirilgan ijro hisoboti'}
               </div>
+
+              {isCompleted && (
+                <div className="task-approval-badge-card">
+                  <div className="approval-badge-icon">✓</div>
+                  <div className="approval-badge-body">
+                    <div className="approval-badge-headline">
+                      Topshiriq rahbar tomonidan to‘liq tasdiqlangan va qabul qilingan
+                    </div>
+                    <div className="approval-badge-details">
+                      <span className="approval-meta-pill approver">
+                        <strong>Tasdiqladi:</strong> {task.approved_by_name || 'Rahbar'}
+                        {task.approved_by_position && ` (${task.approved_by_position})`}
+                      </span>
+                      {task.completed_at && (
+                        <span className="approval-meta-pill time">
+                          <strong>Tasdiqlangan sana va vaqt:</strong> {formatDate(task.completed_at)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               {task.completion_note && (
                 <p className="completion-note-text">«{task.completion_note}»</p>
               )}

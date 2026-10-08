@@ -20,13 +20,14 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setError('Iltimos, faqat rasm faylini tanlang (JPEG, PNG, WebP).');
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validImageTypes.includes(file.type) || !/\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
+      setError('Iltimos, faqat rasm faylini tanlang (JPEG, PNG, WebP). SVG format qabul qilinmaydi.');
       return;
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      setError('Rasm hajmi 8MB dan oshmasligi kerak.');
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Rasm hajmi 5MB dan oshmasligi kerak.');
       return;
     }
 
@@ -114,7 +115,7 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
               />

@@ -132,7 +132,8 @@ const TaskController = {
       return res.status(404).json({ error: { message: 'Fayl topilmadi' } });
     }
 
-    const downloadName = name || path.basename(fullPath);
+    const rawName = name || path.basename(fullPath);
+    const downloadName = String(rawName).replace(/[\r\n"']/g, '_').trim();
     res.download(fullPath, downloadName);
   },
 };

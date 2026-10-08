@@ -4,9 +4,15 @@ import StatusBadge, { getTaskStatusClass } from '../components/StatusBadge';
 import Pagination from '../components/Pagination';
 import TaskModal from '../components/TaskModal';
 import TaskDetailModal from '../components/TaskDetailModal';
+import UserAccountModal from '../components/UserAccountModal';
+import Sidebar from '../components/Sidebar';
+import KanbanBoard from '../components/KanbanBoard';
+import CommandPalette from '../components/CommandPalette';
+import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { taskApi, userApi } from '../api/endpoints';
 import { formatDateTime, getRemainingTime } from '../utils/date';
+import { useCountUp } from '../utils/useCountUp';
 
 const PAGE_SIZE = 20;
 
@@ -23,6 +29,9 @@ export default function AdminDashboard() {
 
   // Active view tab ('tasks' | 'accounts') and global status counts
   const [activeTab, setActiveTab] = useState('tasks');
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'kanban'
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const [statusCounts, setStatusCounts] = useState({
     total: 0,
     pending: 0,
@@ -48,7 +57,21 @@ export default function AdminDashboard() {
   const [editing, setEditing] = useState(null);
   const [initialAssigneeId, setInitialAssigneeId] = useState(null);
   const [detailTask, setDetailTask] = useState(null);
+  const [selectedUserForProfile, setSelectedUserForProfile] = useState(null);
   const [exporting, setExporting] = useState(false);
+
+  const openUserProfile = useCallback(
+    (userOrId) => {
+      if (!userOrId) return;
+      if (typeof userOrId === 'object') {
+        setSelectedUserForProfile(userOrId);
+      } else {
+        const found = accounts.find((a) => a.id === userOrId);
+        setSelectedUserForProfile(found || { id: userOrId });
+      }
+    },
+    [accounts]
+  );
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -286,9 +309,30 @@ export default function AdminDashboard() {
     }
   }
 
+  // Global Ctrl+K keyboard shortcut listener for Command Palette (G'oya #10.1)
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Smooth counting-up animated numbers (G'oya #3.2)
+  const countAccounts = useCountUp(accounts.length || (employees.length + 1) || 66);
+  const countTotal = useCountUp(statusCounts.total || total);
+  const countSubmitted = useCountUp(statusCounts.submitted || 0);
+  const countCompleted = useCountUp(statusCounts.completed || 0);
+
   return (
     <>
-      <Navbar />
+      <Navbar
+        onOpenSidebar={() => setSidebarOpen(true)}
+        onOpenCommandPalette={() => setCmdOpen(true)}
+      />
       <div className="container page">
         <header className="page-head">
           <div>
@@ -296,6 +340,26 @@ export default function AdminDashboard() {
             <p className="lede">Viloyat va 14 ta tuman xodimlariga vazifalarni biriktiring.</p>
           </div>
           <div className="page-head-actions">
+            {activeTab === 'tasks' && (
+              <div className="view-mode-toggle" title="Ko‘rish shaklini tanlang">
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                  title="Jadval ko‘rinishi"
+                >
+                  📋 Jadval
+                </button>
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'kanban' ? 'active' : ''}`}
+                  onClick={() => setViewMode('kanban')}
+                  title="Topshiriqlar doskasi"
+                >
+                  📌 Doska
+                </button>
+              </div>
+            )}
             <button
               id="btn-export-excel"
               className="btn btn-excel"
@@ -318,7 +382,7 @@ export default function AdminDashboard() {
 
         {error && <div className="error-banner">{error}</div>}
 
-        {/* Stat tiles */}
+        {/* Stat tiles with animated numbers, sparklines and trend pills (G'oya #3.2 & #9) */}
         <div className="stats">
           <div
             id="stat-card-accounts"
@@ -329,9 +393,17 @@ export default function AdminDashboard() {
             onKeyDown={(e) => e.key === 'Enter' && handleCardClick('accounts')}
             title="Tizimdagi barcha akkauntlar va xodimlarni ko‘rish"
           >
-            <div className="n">{accounts.length || (employees.length + 1) || 66}</div>
+            <div className="n">{countAccounts}</div>
             <div className="l">Akkauntlar</div>
-            <div className="bar"><i style={{ width: '100%' }} /></div>
+            <div className="sparkline">
+              <span className="sparkline-bar" style={{ height: '45%' }} />
+              <span className="sparkline-bar" style={{ height: '65%' }} />
+              <span className="sparkline-bar" style={{ height: '55%' }} />
+              <span className="sparkline-bar" style={{ height: '80%' }} />
+              <span className="sparkline-bar" style={{ height: '70%' }} />
+              <span className="sparkline-bar" style={{ height: '95%' }} />
+            </div>
+            <div className="stat-trend neutral">👥 14 ta tuman</div>
           </div>
           <div
             id="stat-card-all-tasks"
@@ -342,9 +414,17 @@ export default function AdminDashboard() {
             onKeyDown={(e) => e.key === 'Enter' && handleCardClick('all')}
             title="Barcha vazifalarni ko‘rsatish"
           >
-            <div className="n">{statusCounts.total || total}</div>
+            <div className="n">{countTotal}</div>
             <div className="l">Jami vazifalar</div>
-            <div className="bar"><i style={{ width: '100%' }} /></div>
+            <div className="sparkline">
+              <span className="sparkline-bar" style={{ height: '40%' }} />
+              <span className="sparkline-bar" style={{ height: '60%' }} />
+              <span className="sparkline-bar" style={{ height: '75%' }} />
+              <span className="sparkline-bar" style={{ height: '65%' }} />
+              <span className="sparkline-bar" style={{ height: '85%' }} />
+              <span className="sparkline-bar" style={{ height: '100%' }} />
+            </div>
+            <div className="stat-trend neutral">📊 Barcha statuslar</div>
           </div>
           <div
             id="stat-card-submitted-tasks"
@@ -355,12 +435,20 @@ export default function AdminDashboard() {
             onKeyDown={(e) => e.key === 'Enter' && handleCardClick('submitted')}
             title="Jarayonda va rahbar tasdig‘idagi vazifalarni saralash"
           >
-            <div className="n">{statusCounts.submitted || 0}</div>
+            <div className="n">{countSubmitted}</div>
             <div className="l">
               <span className="stat-label-full">Jarayonda / tasdiqda</span>
               <span className="stat-label-short">Jarayonda</span>
             </div>
-            <div className="bar"><i style={{ width: '60%' }} /></div>
+            <div className="sparkline">
+              <span className="sparkline-bar" style={{ height: '35%', background: 'var(--warn)' }} />
+              <span className="sparkline-bar" style={{ height: '55%', background: 'var(--warn)' }} />
+              <span className="sparkline-bar" style={{ height: '50%', background: 'var(--warn)' }} />
+              <span className="sparkline-bar" style={{ height: '75%', background: 'var(--warn)' }} />
+              <span className="sparkline-bar" style={{ height: '65%', background: 'var(--warn)' }} />
+              <span className="sparkline-bar" style={{ height: '90%', background: 'var(--warn)' }} />
+            </div>
+            <div className="stat-trend positive">⏳ Tasdiq kutilmoqda</div>
           </div>
           <div
             id="stat-card-completed-tasks"
@@ -371,12 +459,20 @@ export default function AdminDashboard() {
             onKeyDown={(e) => e.key === 'Enter' && handleCardClick('completed')}
             title="Bajarilgan vazifalarni saralash"
           >
-            <div className="n">{statusCounts.completed || 0}</div>
+            <div className="n">{countCompleted}</div>
             <div className="l">
               <span className="stat-label-full">Bajarilganlar</span>
               <span className="stat-label-short">Bajarildi</span>
             </div>
-            <div className="bar"><i style={{ width: '100%' }} /></div>
+            <div className="sparkline">
+              <span className="sparkline-bar" style={{ height: '50%', background: 'var(--ok)' }} />
+              <span className="sparkline-bar" style={{ height: '65%', background: 'var(--ok)' }} />
+              <span className="sparkline-bar" style={{ height: '80%', background: 'var(--ok)' }} />
+              <span className="sparkline-bar" style={{ height: '75%', background: 'var(--ok)' }} />
+              <span className="sparkline-bar" style={{ height: '90%', background: 'var(--ok)' }} />
+              <span className="sparkline-bar" style={{ height: '100%', background: 'var(--ok)' }} />
+            </div>
+            <div className="stat-trend positive">✓ Yakunlangan</div>
           </div>
         </div>
 
@@ -496,7 +592,11 @@ export default function AdminDashboard() {
                     paginatedAccounts.map((acc) => (
                       <tr key={acc.id} className="task-row account-row">
                         <td>
-                          <div className="table-assignee-cell">
+                          <div
+                            className="table-assignee-cell clickable"
+                            onClick={() => openUserProfile(acc)}
+                            title={`${acc.name} profilini ko‘rish`}
+                          >
                             <div className="table-assignee-avatar">
                               {acc.avatar ? (
                                 <img
@@ -571,7 +671,11 @@ export default function AdminDashboard() {
                 paginatedAccounts.map((acc) => (
                   <div className="task-card account-card" key={acc.id}>
                     <div className="task-card-header">
-                      <div className="table-assignee-cell">
+                      <div
+                        className="table-assignee-cell clickable"
+                        onClick={() => openUserProfile(acc)}
+                        title={`${acc.name} profilini ko‘rish`}
+                      >
                         <div className="table-assignee-avatar">
                           {acc.avatar ? (
                             <img
@@ -640,7 +744,12 @@ export default function AdminDashboard() {
           /* Tasks View */
           <div className="card card-pad">
             <div className="section-title">{tasksSectionTitle}</div>
-            <div className="filters">
+
+            {viewMode === 'kanban' ? (
+              <KanbanBoard tasks={tasks} onSelectTask={setDetailTask} />
+            ) : (
+              <>
+                <div className="filters">
               <div className="field">
                 <label>Holati</label>
                 <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -693,19 +802,21 @@ export default function AdminDashboard() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={5}>
-                        <div className="center-screen" style={{ height: 120 }}>
-                          <span className="spinner" /> Vazifalar yuklanmoqda…
-                        </div>
+                      <td colSpan={5} style={{ padding: '1.5rem 1rem' }}>
+                        <div className="skeleton skeleton-row" style={{ height: 42 }} />
+                        <div className="skeleton skeleton-row" style={{ height: 42, width: '90%' }} />
+                        <div className="skeleton skeleton-row" style={{ height: 42, width: '80%' }} />
                       </td>
                     </tr>
                   ) : tasks.length === 0 ? (
                     <tr>
                       <td colSpan={5}>
-                        <div className="empty">
-                          <div className="big">Vazifalar topilmadi</div>
-                          <div>Filtrlarni o‘zgartirib ko‘ring yoki yangi vazifa yarating.</div>
-                        </div>
+                        <EmptyState
+                          title="Vazifalar topilmadi"
+                          description="Tanlangan filtrlar bo‘yicha topshiriq yo‘q yoki hali birorta ham vazifa yaratilmagan."
+                          actionText="+ Yangi vazifa yaratish"
+                          onAction={openCreate}
+                        />
                       </td>
                     </tr>
                   ) : (
@@ -728,7 +839,25 @@ export default function AdminDashboard() {
                         </td>
                         <td>
                           {t.assignee_name ? (
-                            <div className="table-assignee-cell">
+                            <div
+                              className="table-assignee-cell clickable"
+                              onClick={() =>
+                                openUserProfile({
+                                  id: t.assigned_to,
+                                  name: t.assignee_name,
+                                  email: t.assignee_email,
+                                  position: t.assignee_position,
+                                  avatar: t.assignee_avatar,
+                                  hierarchy_rank: t.assignee_rank,
+                                  territory_type: t.assignee_territory_type,
+                                  region: t.assignee_region,
+                                  district: t.assignee_district,
+                                  role: t.assignee_role,
+                                  created_at: t.assignee_created_at,
+                                })
+                              }
+                              title={`${t.assignee_name} hisoboti va profilini ko‘rish`}
+                            >
                               <div className="table-assignee-avatar">
                                 {t.assignee_avatar ? (
                                   <img
@@ -782,6 +911,14 @@ export default function AdminDashboard() {
                                 </div>
                               );
                             })()}
+                            {t.status === 'completed' && (
+                              <div className="table-date-line approved-info" title={`Tasdiqlagan: ${t.approved_by_name || 'Rahbar'} (${formatDateTime(t.completed_at)})`}>
+                                <span className="date-icon">✓</span>
+                                <span className="date-tag-label">Tasdiqladi:</span>
+                                <strong className="date-tag-val">{t.approved_by_name || 'Rahbar'}</strong>
+                                {t.completed_at && <span className="date-tag-time">({formatDateTime(t.completed_at)})</span>}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="right">
@@ -808,14 +945,17 @@ export default function AdminDashboard() {
             {/* Mobile Card View (< 768px) */}
             <div className="mobile-only task-card-list">
               {loading ? (
-                <div className="center-screen" style={{ padding: '2rem 1rem' }}>
-                  <span className="spinner" /> Vazifalar yuklanmoqda…
+                <div style={{ padding: '1rem' }}>
+                  <div className="skeleton skeleton-row" style={{ height: 110, marginBottom: '1rem' }} />
+                  <div className="skeleton skeleton-row" style={{ height: 110 }} />
                 </div>
               ) : tasks.length === 0 ? (
-                <div className="empty">
-                  <div className="big">Vazifalar topilmadi</div>
-                  <div>Filtrlarni o‘zgartirib ko‘ring yoki yangi vazifa yarating.</div>
-                </div>
+                <EmptyState
+                  title="Vazifalar topilmadi"
+                  description="Tanlangan filtrlar bo‘yicha topshiriq yo‘q yoki hali birorta ham vazifa yaratilmagan."
+                  actionText="+ Yangi vazifa yaratish"
+                  onAction={openCreate}
+                />
               ) : (
                 tasks.map((t) => (
                   <div className={`task-card ${getTaskStatusClass(t)}`} key={t.id}>
@@ -840,7 +980,25 @@ export default function AdminDashboard() {
                         <span className="meta-label">Biriktirilgan:</span>
                         <span className="meta-value">
                           {t.assignee_name ? (
-                            <span className="mobile-assignee-badge">
+                            <span
+                              className="mobile-assignee-badge clickable"
+                              onClick={() =>
+                                openUserProfile({
+                                  id: t.assigned_to,
+                                  name: t.assignee_name,
+                                  email: t.assignee_email,
+                                  position: t.assignee_position,
+                                  avatar: t.assignee_avatar,
+                                  hierarchy_rank: t.assignee_rank,
+                                  territory_type: t.assignee_territory_type,
+                                  region: t.assignee_region,
+                                  district: t.assignee_district,
+                                  role: t.assignee_role,
+                                  created_at: t.assignee_created_at,
+                                })
+                              }
+                              title={`${t.assignee_name} profilini ko‘rish`}
+                            >
                               {t.assignee_avatar && (
                                 <img
                                   src={t.assignee_avatar}
@@ -881,6 +1039,15 @@ export default function AdminDashboard() {
                           </div>
                         );
                       })()}
+                      {t.status === 'completed' && (
+                        <div className="task-meta-item completed-approval-meta">
+                          <span className="meta-label">✓ Tasdiqlandi:</span>
+                          <span className="meta-value">
+                            <strong>{t.approved_by_name || 'Rahbar'}</strong>
+                            {t.completed_at && <span className="muted font-normal"> • {formatDateTime(t.completed_at)}</span>}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="task-card-actions">
                       {t.status === 'submitted' ? (
@@ -902,9 +1069,50 @@ export default function AdminDashboard() {
             </div>
 
             <Pagination page={page} limit={PAGE_SIZE} total={total} onChange={setPage} />
+              </>
+            )}
           </div>
         )}
       </div>
+
+      {/* Floating Action Button (FAB) for mobile (G'oya #3.4) */}
+      <button
+        type="button"
+        className="fab"
+        onClick={() => openCreate()}
+        title="Yangi vazifa yaratish"
+        aria-label="Yangi vazifa"
+      >
+        +
+      </button>
+
+      {/* Sidebar Drawer Navigation (G'oya #4.1) */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onOpenProfile={() => openUserProfile()}
+        onOpenCreateTask={openCreate}
+        onOpenCommandPalette={() => setCmdOpen(true)}
+        isAdmin={true}
+      />
+
+      {/* Command Palette (Ctrl+K) (G'oya #10.1) */}
+      <CommandPalette
+        isOpen={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        tasks={tasks}
+        accounts={accounts}
+        onSelectTask={setDetailTask}
+        onSelectUser={openUserProfile}
+        onCreateTask={openCreate}
+        onExportExcel={handleExportExcel}
+        onToggleKanban={() => setViewMode((m) => (m === 'table' ? 'kanban' : 'table'))}
+        viewMode={viewMode}
+      />
 
       {modalOpen && (
         <TaskModal
@@ -925,6 +1133,19 @@ export default function AdminDashboard() {
           task={detailTask}
           onClose={() => setDetailTask(null)}
           onTaskUpdated={loadTasks}
+        />
+      )}
+
+      {selectedUserForProfile && (
+        <UserAccountModal
+          user={selectedUserForProfile}
+          onClose={() => setSelectedUserForProfile(null)}
+          onAssignTask={(targetUserId) => {
+            openCreate(targetUserId);
+          }}
+          onOpenTaskDetail={(task) => {
+            setDetailTask(task);
+          }}
         />
       )}
     </>

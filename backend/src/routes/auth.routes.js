@@ -2,6 +2,7 @@ const express = require('express');
 const AuthController = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth');
 const { validateBody } = require('../middleware/validate');
+const { loginLimiter, registerLimiter } = require('../middleware/rateLimiter');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -9,6 +10,7 @@ const router = express.Router();
 // POST /auth/register — Public self-registration (always creates employee account)
 router.post(
   '/register',
+  registerLimiter,
   validateBody([
     { field: 'name', required: true, type: 'string', maxLength: 100 },
     { field: 'email', required: true, type: 'email' },
@@ -17,9 +19,10 @@ router.post(
   asyncHandler(AuthController.register)
 );
 
-// POST /auth/login
+// POST /auth/login — Protected by brute-force rate limiter
 router.post(
   '/login',
+  loginLimiter,
   validateBody([
     { field: 'email', required: true, type: 'email' },
     { field: 'password', required: true, type: 'string' },

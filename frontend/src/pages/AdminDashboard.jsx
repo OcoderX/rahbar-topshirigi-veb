@@ -512,8 +512,10 @@ export default function AdminDashboard() {
             {/* Filters for Accounts */}
             <div className="filters">
               <div className="field" style={{ minWidth: 260, flex: 2 }}>
-                <label>Qidirish</label>
+                <label htmlFor="account-search-input">Qidirish</label>
                 <input
+                  id="account-search-input"
+                  name="accountSearch"
                   type="text"
                   className="input"
                   placeholder="F.I.SH, lavozim, email yoki hudud..."
@@ -523,8 +525,10 @@ export default function AdminDashboard() {
               </div>
 
               <div className="field" style={{ minWidth: 180, flex: 1 }}>
-                <label>Hudud / Tuman</label>
+                <label htmlFor="account-territory-select">Hudud / Tuman</label>
                 <select
+                  id="account-territory-select"
+                  name="accountTerritory"
                   className="select"
                   value={accountTerritoryFilter}
                   onChange={(e) => setAccountTerritoryFilter(e.target.value)}
@@ -540,8 +544,10 @@ export default function AdminDashboard() {
               </div>
 
               <div className="field" style={{ minWidth: 140, flex: 1 }}>
-                <label>Roli</label>
+                <label htmlFor="account-role-select">Roli</label>
                 <select
+                  id="account-role-select"
+                  name="accountRole"
                   className="select"
                   value={accountRoleFilter}
                   onChange={(e) => setAccountRoleFilter(e.target.value)}
@@ -751,8 +757,14 @@ export default function AdminDashboard() {
               <>
                 <div className="filters">
               <div className="field">
-                <label>Holati</label>
-                <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <label htmlFor="admin-task-status-filter">Holati</label>
+                <select
+                  id="admin-task-status-filter"
+                  name="statusFilter"
+                  className="select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
                   <option value="">Barcha holatlar</option>
                   <option value="pending">Kutilmoqda</option>
                   <option value="in_progress">Ko‘rildi</option>
@@ -762,12 +774,25 @@ export default function AdminDashboard() {
                 </select>
               </div>
               <div className="field">
-                <label>Muddatigacha</label>
-                <input type="date" className="input" value={dueBefore} onChange={(e) => setDueBefore(e.target.value)} />
+                <label htmlFor="admin-task-due-filter">Muddatigacha</label>
+                <input
+                  id="admin-task-due-filter"
+                  name="dueBefore"
+                  type="date"
+                  className="input"
+                  value={dueBefore}
+                  onChange={(e) => setDueBefore(e.target.value)}
+                />
               </div>
               <div className="field">
-                <label>Saralash</label>
-                <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <label htmlFor="admin-task-sort-filter">Saralash</label>
+                <select
+                  id="admin-task-sort-filter"
+                  name="sortBy"
+                  className="select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
                   <option value="created_at">Eng so‘nggi berilganlar (yangi birinchi)</option>
                   <option value="due_date">Muddati bo‘yicha</option>
                   <option value="status">Holati bo‘yicha</option>

@@ -455,6 +455,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                       <label htmlFor="rework-reason">Rad etish va qayta ishlash sababi</label>
                       <textarea
                         id="rework-reason"
+                        name="reworkReason"
                         className="textarea"
                         rows={3}
                         value={reworkReason}
@@ -505,7 +506,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
 
               <div className="field">
                 <div className="field-head-with-action">
-                  <label>
+                  <label htmlFor="task-report-note">
                     {task.rework_required
                       ? 'Tuzatilgan ijro izohi (hisobot)'
                       : 'Ijro to‘g‘risida izoh (hisobot)'}
@@ -516,6 +517,8 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                   />
                 </div>
                 <textarea
+                  id="task-report-note"
+                  name="reportNote"
                   className="textarea"
                   rows={3}
                   value={reportNote}

@@ -5,10 +5,10 @@ const UserService = require('../services/user.service');
 const TaskModel = require('../models/task.model');
 
 const UserController = {
-  // GET /users/:id — retrieve user profile & task statistics
+  // GET /users/:id — retrieve user profile & task statistics (admin, or the employee themselves)
   async getById(req, res) {
     const userId = Number(req.params.id);
-    const user = await UserService.getUserById(userId);
+    const user = await UserService.getUserById(userId, req.user);
     const statsResult = await TaskModel.findAll({ assignedTo: userId, limit: 1 });
     res.json({
       data: {

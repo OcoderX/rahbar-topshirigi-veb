@@ -244,8 +244,14 @@ export default function EmployeeDashboard() {
             <>
               <div className="filters">
                 <div className="field">
-                  <label>Holati</label>
-                  <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <label htmlFor="emp-task-status-filter">Holati</label>
+                  <select
+                    id="emp-task-status-filter"
+                    name="statusFilter"
+                    className="select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
                     <option value="">Barcha holatlar</option>
                     <option value="pending">Kutilmoqda</option>
                     <option value="in_progress">Ko‘rildi</option>
@@ -255,8 +261,14 @@ export default function EmployeeDashboard() {
                   </select>
                 </div>
                 <div className="field">
-                  <label>Saralash</label>
-                  <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                  <label htmlFor="emp-task-sort-filter">Saralash</label>
+                  <select
+                    id="emp-task-sort-filter"
+                    name="sortBy"
+                    className="select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
                     <option value="created_at">Eng so‘nggi berilganlar (yangi birinchi)</option>
                     <option value="due_date">Muddati bo‘yicha</option>
                     <option value="status">Holati bo‘yicha</option>

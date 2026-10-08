@@ -164,13 +164,15 @@ export default function TaskModal({ task, initialAssignee, employees, onClose, o
           {/* Sarlavha + Ovozli xabar mikrofon tugmasi yonma-yon */}
           <div className="field">
             <div className="field-head-with-action">
-              <label>Sarlavha</label>
+              <label htmlFor="task-title-input">Sarlavha</label>
               <VoiceRecorder
                 audioUrl={form.audio_url}
                 onAudioChange={handleAudioChange}
               />
             </div>
             <input
+              id="task-title-input"
+              name="title"
               className="input input-title"
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
@@ -180,8 +182,10 @@ export default function TaskModal({ task, initialAssignee, employees, onClose, o
 
           {/* Tavsif */}
           <div className="field">
-            <label>Tavsif va ko‘rsatmalar</label>
+            <label htmlFor="task-description-input">Tavsif va ko‘rsatmalar</label>
             <textarea
+              id="task-description-input"
+              name="description"
               className="textarea"
               rows={3}
               value={form.description}
@@ -223,8 +227,10 @@ export default function TaskModal({ task, initialAssignee, employees, onClose, o
           {/* Faqat tahrirlashda holat ko'rinadi (Yangi topshiriq yaratilayotganda kiritilmaydi!) */}
           {isEdit && (
             <div className="field">
-              <label>Holati</label>
+              <label htmlFor="task-status-select">Holati</label>
               <select
+                id="task-status-select"
+                name="status"
                 className="select"
                 value={form.status}
                 onChange={(e) => set('status', e.target.value)}

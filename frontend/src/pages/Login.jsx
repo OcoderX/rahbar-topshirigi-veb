@@ -190,8 +190,10 @@ export default function Login() {
           )}
 
           <div className="field">
-            <label>Elektron pochta (Email)</label>
+            <label htmlFor="login-email">Elektron pochta (Email)</label>
             <input
+              id="login-email"
+              name="email"
               className="input"
               type="email"
               value={email}
@@ -203,8 +205,10 @@ export default function Login() {
           </div>
 
           <div className="field">
-            <label>Parol</label>
+            <label htmlFor="login-password">Parol</label>
             <input
+              id="login-password"
+              name="password"
               className="input"
               type="password"
               value={password}

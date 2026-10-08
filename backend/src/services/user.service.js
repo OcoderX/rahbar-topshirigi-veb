@@ -14,7 +14,10 @@ const UserService = {
     return UserModel.findAll(opts);
   },
 
-  async getUserById(id) {
+  async getUserById(id, actor) {
+    if (actor && actor.role !== 'admin' && actor.id !== id) {
+      throw ApiError.forbidden('Faqat o‘z profilingiz ma’lumotlarini ko‘ra olasiz');
+    }
     const user = await UserModel.findById(id);
     if (!user) throw ApiError.notFound('Foydalanuvchi topilmadi');
     return user;

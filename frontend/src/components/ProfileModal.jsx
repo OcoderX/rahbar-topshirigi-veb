@@ -152,8 +152,10 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
           </div>
 
           <div className="field" style={{ marginTop: '1.25rem' }}>
-            <label>F.I.SH. (Ism va familiya)</label>
+            <label htmlFor="profile-name-input">F.I.SH. (Ism va familiya)</label>
             <input
+              id="profile-name-input"
+              name="name"
               type="text"
               className="input"
               value={name}
@@ -163,8 +165,10 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
           </div>
 
           <div className="field">
-            <label>Lavozim</label>
+            <label htmlFor="profile-position-input">Lavozim</label>
             <input
+              id="profile-position-input"
+              name="position"
               type="text"
               className="input"
               value={position}
@@ -174,8 +178,10 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
           </div>
 
           <div className="field">
-            <label>Elektron pochta (Email)</label>
+            <label htmlFor="profile-email-input">Elektron pochta (Email)</label>
             <input
+              id="profile-email-input"
+              name="email"
               type="email"
               className="input"
               value={user?.email || ''}

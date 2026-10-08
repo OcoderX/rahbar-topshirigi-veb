@@ -119,12 +119,24 @@ def _side(color: str = LINE, style: str = "thin") -> Side:
 GRID = Border(left=_side(), right=_side(), top=_side(), bottom=_side())
 UNDERLINE = Border(bottom=_side())
 
+FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
 def _clean(value):
-    return ILLEGAL_CHARACTERS_RE.sub("", value) if isinstance(value, str) else value
+    if not isinstance(value, str):
+        return value
+    cleaned = ILLEGAL_CHARACTERS_RE.sub("", value)
+    # Neutralize CSV / Excel formula injection (OWASP guideline).
+    # If string begins with =, +, -, @, \t, or \r, prepend apostrophe (')
+    # so spreadsheet software displays it strictly as plain text.
+    stripped = cleaned.lstrip()
+    if stripped and stripped.startswith(FORMULA_PREFIXES):
+        return f"'{cleaned}"
+    return cleaned
 
 def _set(ws: Worksheet, row: int, col: int, value, fmt: str | None = None):
-    cell = ws.cell(row=row, column=col, value=_clean(value))
-    if isinstance(value, str) and value.startswith("="):
+    clean_val = _clean(value)
+    cell = ws.cell(row=row, column=col, value=clean_val)
+    if isinstance(clean_val, str) and (clean_val.startswith(FORMULA_PREFIXES) or clean_val.startswith("'")):
         cell.data_type = "s"
     if fmt:
         cell.number_format = fmt

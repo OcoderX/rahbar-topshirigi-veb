@@ -85,8 +85,11 @@ export default function DueDatePicker({ value, onChange }) {
 
       <div className="due-date-input-row">
         <input
+          id="due-date-time-input"
+          name="dueDate"
           type="datetime-local"
           className="input due-date-datetime-input"
+          aria-label="Bajarish muddati va vaqti"
           min={minDateTime}
           value={inputValue}
           onChange={(e) => onChange(e.target.value)}

@@ -359,8 +359,11 @@ export default function AssigneeSelect({
             </svg>
             <input
               ref={searchInputRef}
+              id="assignee-search-input"
+              name="assigneeSearch"
               type="text"
               className="assignee-search-input"
+              aria-label="Ism, lavozim yoki tuman bo'yicha qidirish"
               placeholder="Ism, lavozim yoki tuman bo'yicha qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}

@@ -182,8 +182,11 @@ export default function CommandPalette({
           </svg>
           <input
             ref={inputRef}
+            id="cmd-palette-input"
+            name="cmdQuery"
             type="text"
             className="cmd-input"
+            aria-label="Topshiriq, xodim yoki harakat qidiring"
             placeholder="Topshiriq, xodim yoki harakat qidiring… (Ctrl+K)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

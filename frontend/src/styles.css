@@ -299,7 +299,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em
 .section-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-family: var(--sans); font-weight: 700; margin-bottom: .75rem; }
 
 /* stat tiles */
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
 .employee-stats { grid-template-columns: repeat(5, 1fr); }
 .stat { padding: 1.1rem 1.2rem; }
 .stat .n { font-family: var(--serif); font-size: 2rem; font-weight: 600; line-height: 1; }
@@ -320,6 +320,48 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border-color: var(--accent);
 }
+
+/* Stat card color variants & active states */
+.stat-card-pending .n { color: #dc2626; }
+.stat-card-pending .sparkline-bar { background: #ef4444; }
+.stat-card-pending .stat-trend { background: #fee2e2; color: #dc2626; }
+.stat-card-pending.active {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px #ef4444, 0 4px 14px rgba(239, 68, 68, 0.22) !important;
+  background: var(--paper-raised);
+}
+.stat-card-pending.active .n { color: #dc2626 !important; }
+
+.stat-card-in-progress .n { color: #475569; }
+.stat-card-in-progress .sparkline-bar { background: #64748b; }
+.stat-card-in-progress .stat-trend { background: #f1f5f9; color: #475569; }
+.stat-card-in-progress.active {
+  border-color: #64748b !important;
+  box-shadow: 0 0 0 2px #64748b, 0 4px 14px rgba(100, 116, 139, 0.22) !important;
+  background: var(--paper-raised);
+}
+.stat-card-in-progress.active .n { color: #475569 !important; }
+
+.stat-card-submitted .n { color: #b45309; }
+.stat-card-submitted .sparkline-bar { background: #f59e0b; }
+.stat-card-submitted .stat-trend { background: #fef3c7; color: #b45309; }
+.stat-card-submitted.active {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px #f59e0b, 0 4px 14px rgba(245, 158, 11, 0.25) !important;
+  background: var(--paper-raised);
+}
+.stat-card-submitted.active .n { color: #b45309 !important; }
+
+.stat-card-completed .n { color: #15803d; }
+.stat-card-completed .sparkline-bar { background: #10b981; }
+.stat-card-completed .stat-trend { background: #dcfce7; color: #15803d; }
+.stat-card-completed.active {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px #10b981, 0 4px 14px rgba(16, 185, 129, 0.25) !important;
+  background: var(--paper-raised);
+}
+.stat-card-completed.active .n { color: #15803d !important; }
+
 .clickable-stat-card.active {
   border-color: var(--accent);
   box-shadow: 0 0 0 1.5px var(--accent), 0 4px 14px var(--accent-glow);
@@ -331,6 +373,11 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em
 .clickable-stat-card.active .bar i {
   background: var(--accent);
   width: 100% !important;
+}
+
+@media (max-width: 1400px) {
+  .stats { grid-template-columns: repeat(3, 1fr); }
+  .employee-stats { grid-template-columns: repeat(3, 1fr); }
 }
 
 .section-title-row {
@@ -474,34 +521,34 @@ table.tasks td[colspan] {
   --task-hover-shadow: 0 4px 16px rgba(245, 158, 11, 0.10);
 }
 
-/* 3. Ko'rildi (In Progress) — nozik ko'kish/moviy pastel fon va moviy chiziq */
+/* 3. Ko'rildi / Xodim ko'rgan (In Progress) — nozik kulrang/slate pastel fon va kulrang chiziq */
 .task-status-in_progress {
-  --task-bg: #f6fafe;
-  --task-border: #d2e7f8;
-  --task-accent: #0ea5e9;
-  --task-hover-bg: #eef6fd;
-  --task-hover-border: #7dd3fc;
-  --task-hover-shadow: 0 4px 16px rgba(14, 165, 233, 0.09);
+  --task-bg: #f8fafc;
+  --task-border: #e2e8f0;
+  --task-accent: #64748b;
+  --task-hover-bg: #f1f5f9;
+  --task-hover-border: #cbd5e1;
+  --task-hover-shadow: 0 4px 16px rgba(100, 116, 139, 0.10);
 }
 
-/* 4. Kutilmoqda (Pending) — nozik issiq neytral fon va terracotta chiziq */
+/* 4. Kutilmoqda (Pending) — nozik qizil pastel fon va qizil chiziq */
 .task-status-pending {
-  --task-bg: #fcf9f7;
-  --task-border: #f1dfd8;
-  --task-accent: #c4502a;
-  --task-hover-bg: #f8f1ed;
-  --task-hover-border: #e6c8bd;
-  --task-hover-shadow: 0 4px 14px rgba(196, 80, 42, 0.08);
+  --task-bg: #fff5f5;
+  --task-border: #fed7d7;
+  --task-accent: #ef4444;
+  --task-hover-bg: #fee2e2;
+  --task-hover-border: #fca5a5;
+  --task-hover-shadow: 0 4px 14px rgba(239, 68, 68, 0.10);
 }
 
-/* 5. Qayta ishlovda (Rework) — nozik pushti/qizg'ish fon va qizil chiziq */
+/* 5. Qayta ishlovda (Rework) — sariq/amber fon va sariq/olovrang chiziq (Rahbar tasdig'i guruhi) */
 .task-status-rework {
-  --task-bg: #fef6f6;
-  --task-border: #fcd7d7;
-  --task-accent: #ef4444;
-  --task-hover-bg: #fdeeee;
-  --task-hover-border: #fca5a5;
-  --task-hover-shadow: 0 4px 16px rgba(239, 68, 68, 0.10);
+  --task-bg: #fffbeb;
+  --task-border: #fde68a;
+  --task-accent: #f59e0b;
+  --task-hover-bg: #fef3c7;
+  --task-hover-border: #fcd34d;
+  --task-hover-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
 }
 
 /* 6. Akkauntlar jadvali qatorlari */
@@ -3189,15 +3236,82 @@ table.tasks td[colspan] {
 /* ── 6. Kanban Board Styling (G'oya #4.2) ─────────────────────────────── */
 .kanban-wrapper {
   margin-top: 1.25rem;
+  width: 100%;
+}
+
+.kanban-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.kanban-tab-switcher {
+  display: inline-flex;
+  background: var(--paper-sunken);
+  padding: 3px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  gap: 3px;
   overflow-x: auto;
-  padding-bottom: 1rem;
+  max-width: 100%;
+}
+
+.kanban-tab-btn {
+  border: none;
+  background: transparent;
+  padding: .35rem .75rem;
+  font-size: .78rem;
+  font-weight: 600;
+  border-radius: calc(var(--radius) - 3px);
+  cursor: pointer;
+  color: var(--ink-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  white-space: nowrap;
+  transition: all .15s ease;
+}
+
+.kanban-tab-btn:hover {
+  color: var(--ink);
+}
+
+.kanban-tab-btn.active {
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+
+.kanban-tab-btn .tab-count {
+  font-size: .72rem;
+  padding: .08rem .4rem;
+  border-radius: 999px;
+  background: var(--paper-sunken);
 }
 
 .kanban-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(260px, 1fr));
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
   gap: 1.1rem;
-  min-width: 1040px;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1100px) {
+  .kanban-grid {
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .kanban-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .kanban-column {
@@ -3206,13 +3320,52 @@ table.tasks td[colspan] {
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 280px);
-  min-height: 400px;
+  max-height: calc(100vh - 270px);
+  min-height: 440px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .2s ease;
 }
 
 [data-theme="dark"] .kanban-column {
   background: #141722;
   border-color: #222736;
+}
+
+/* Status specific top headers for Kanban columns */
+.kanban-col-pending {
+  border-top: 3.5px solid #ef4444;
+}
+.kanban-col-pending .kanban-col-count {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.kanban-col-in_progress {
+  border-top: 3.5px solid #64748b;
+}
+.kanban-col-in_progress .kanban-col-count {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.kanban-col-submitted {
+  border-top: 3.5px solid #f59e0b;
+}
+.kanban-col-submitted .kanban-col-count {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.kanban-col-completed {
+  border-top: 3.5px solid #10b981;
+}
+.kanban-col-completed .kanban-col-count {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
 }
 
 .kanban-col-header {
@@ -3241,9 +3394,7 @@ table.tasks td[colspan] {
 .kanban-col-count {
   font-size: .75rem;
   font-weight: 700;
-  background: var(--paper-raised);
-  color: var(--ink-soft);
-  padding: .15rem .5rem;
+  padding: .15rem .55rem;
   border-radius: 999px;
   border: 1px solid var(--line);
 }
@@ -3259,7 +3410,7 @@ table.tasks td[colspan] {
 
 .kanban-col-empty {
   text-align: center;
-  padding: 2.5rem 1rem;
+  padding: 3rem 1rem;
   color: var(--ink-faint);
   font-size: .82rem;
   font-style: italic;
@@ -3276,6 +3427,7 @@ table.tasks td[colspan] {
   display: flex;
   flex-direction: column;
   gap: .55rem;
+  position: relative;
 }
 
 .kanban-card:hover {
@@ -3284,8 +3436,22 @@ table.tasks td[colspan] {
   border-color: var(--accent);
 }
 
+/* Kanban card status left borders */
+.kanban-card.status-pending {
+  border-left: 3.5px solid #ef4444;
+}
+.kanban-card.status-in_progress {
+  border-left: 3.5px solid #64748b;
+}
+.kanban-card.status-submitted {
+  border-left: 3.5px solid #f59e0b;
+}
+.kanban-card.status-completed {
+  border-left: 3.5px solid #10b981;
+}
 .kanban-card-rework {
-  border-left: 3px solid var(--danger);
+  border-left: 3.5px solid #f59e0b !important;
+  box-shadow: 0 0 0 1px #fde68a, var(--shadow-sm);
 }
 
 .kanban-card-head {
@@ -3357,8 +3523,8 @@ table.tasks td[colspan] {
   gap: .25rem;
 }
 
-.kanban-deadline.overdue { color: var(--danger); font-weight: 700; }
-.kanban-deadline.near-due { color: var(--warn); font-weight: 600; }
+.kanban-deadline.overdue { color: #dc2626; font-weight: 700; }
+.kanban-deadline.near-due { color: #b45309; font-weight: 600; }
 
 .kanban-card-media-tags {
   display: flex;
@@ -3368,10 +3534,202 @@ table.tasks td[colspan] {
 
 .kanban-tag {
   font-size: .7rem;
-  padding: .1rem .4rem;
+  padding: .15rem .45rem;
   background: var(--paper-sunken);
   color: var(--ink-soft);
   border-radius: 4px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.kanban-tag.photo { background: #eff6ff; color: #1d4ed8; }
+.kanban-tag.video { background: #fdf2f8; color: #be185d; }
+.kanban-tag.audio { background: #fef3c7; color: #b45309; }
+.kanban-tag.report { background: #dcfce7; color: #15803d; }
+
+/* ── Uniform Media Gallery Grid in Task Detail Modal ─────────────────── */
+.detail-media-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-top: .75rem;
+}
+
+.media-gallery-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  position: relative;
+}
+
+.media-gallery-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.media-gallery-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #0f172a;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.media-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .25s ease;
+}
+
+.media-gallery-thumb:hover img {
+  transform: scale(1.05);
+}
+
+.media-gallery-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.media-gallery-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+}
+
+.media-gallery-zoom-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #ffffff;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background .15s;
+  z-index: 2;
+}
+.media-gallery-zoom-btn:hover {
+  background: var(--accent);
+}
+
+.media-gallery-info {
+  padding: .65rem .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  background: var(--paper-raised);
+}
+
+.media-gallery-name {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-gallery-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: .2rem;
+}
+
+.media-gallery-size {
+  font-size: .7rem;
+  color: var(--ink-faint);
+}
+
+.media-gallery-dl-btn {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-wash);
+  border: none;
+  padding: .2rem .5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.media-gallery-dl-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* Lightbox modal for full size view */
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: var(--radius-s);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 1.6rem;
+  cursor: pointer;
 }
 
 /* ── 7. Sidebar Navigation (G'oya #4.1) ───────────────────────────────── */

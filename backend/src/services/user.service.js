@@ -79,6 +79,8 @@ const UserService = {
           }
         } catch (_e) {}
       }
+    } else if (avatar === '' || avatar === null) {
+      avatarUrl = null;
     }
 
     const updated = await UserModel.updateProfile(userId, { name, position, avatar: avatarUrl });

@@ -176,10 +176,20 @@ export default function Sidebar({
             >
               <div className="sidebar-avatar">
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} />
-                ) : (
-                  <span>{user.name ? user.name.charAt(0).toUpperCase() : '?'}</span>
-                )}
+                  <img
+                    key={user.avatar}
+                    src={user.avatar}
+                    alt={user.name}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.parentElement?.querySelector('.sidebar-avatar-fallback');
+                      if (fallback) fallback.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <span className={`sidebar-avatar-fallback ${user.avatar ? 'hidden' : ''}`}>
+                  {user.name ? user.name.charAt(0).toUpperCase() : '?'}
+                </span>
               </div>
               <div className="sidebar-user-meta">
                 <span className="sidebar-user-name">{user.name}</span>

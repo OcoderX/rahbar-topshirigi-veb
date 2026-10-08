@@ -35,6 +35,14 @@ export default function EmployeeDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
+  const [statusCounts, setStatusCounts] = useState({
+    total: 0,
+    pending: 0,
+    in_progress: 0,
+    submitted: 0,
+    completed: 0,
+  });
+
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -48,6 +56,9 @@ export default function EmployeeDashboard() {
       });
       setTasks(res.data);
       setTotal(res.total);
+      if (res.statusCounts) {
+        setStatusCounts(res.statusCounts);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -75,22 +86,12 @@ export default function EmployeeDashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const counts = useMemo(() => {
-    return tasks.reduce(
-      (acc, t) => {
-        acc[t.status] = (acc[t.status] || 0) + 1;
-        return acc;
-      },
-      { pending: 0, in_progress: 0, submitted: 0, completed: 0 }
-    );
-  }, [tasks]);
-
-  // Animated stat counters (G'oya #3.2)
-  const countTotal = useCountUp(total);
-  const countPending = useCountUp(counts.pending);
-  const countInProgress = useCountUp(counts.in_progress);
-  const countSubmitted = useCountUp(counts.submitted);
-  const countCompleted = useCountUp(counts.completed);
+  // Animated stat counters
+  const countTotal = useCountUp(statusCounts.total || total);
+  const countPending = useCountUp(statusCounts.pending || 0);
+  const countInProgress = useCountUp(statusCounts.in_progress || 0);
+  const countSubmitted = useCountUp(statusCounts.submitted || 0);
+  const countCompleted = useCountUp(statusCounts.completed || 0);
 
   return (
     <>
@@ -104,6 +105,7 @@ export default function EmployeeDashboard() {
             <div className="employee-big-avatar" onClick={() => setProfileOpen(true)} title="Rasmni o‘zgartirish">
               {user?.avatar ? (
                 <img
+                  key={user.avatar}
                   src={user.avatar}
                   alt={user.name}
                   className="employee-avatar-img"
@@ -156,9 +158,16 @@ export default function EmployeeDashboard() {
 
         {error && <div className="error-banner">{error}</div>}
 
-        {/* Stat tiles with sparklines and count up (G'oya #3.2 & #9) */}
+        {/* Stat tiles with sparklines and count up */}
         <div className="stats employee-stats">
-          <div className="card stat">
+          {/* 1. Menga biriktirilgan */}
+          <div
+            className={`card stat clickable-stat-card ${!statusFilter ? 'active' : ''}`}
+            onClick={() => setStatusFilter('')}
+            role="button"
+            tabIndex={0}
+            title="Barcha biriktirilgan topshiriqlarni ko‘rsatish"
+          >
             <div className="n">{countTotal}</div>
             <div className="l">Menga biriktirilgan</div>
             <div className="sparkline">
@@ -171,63 +180,79 @@ export default function EmployeeDashboard() {
             <div className="stat-trend neutral">Jami topshiriqlar</div>
           </div>
 
-          <div className="card stat">
+          {/* 2. Kutilmoqda — QIZILDA (Red) */}
+          <div
+            className={`card stat clickable-stat-card stat-card-pending ${statusFilter === 'pending' ? 'active' : ''}`}
+            onClick={() => setStatusFilter((prev) => (prev === 'pending' ? '' : 'pending'))}
+            role="button"
+            tabIndex={0}
+            title="Kutilmoqda — yangi, hali ochilmagan topshiriqlar"
+          >
             <div className="n">{countPending}</div>
-            <div className="l">
-              <span className="stat-label-full">Kutilmoqda (ushbu sahifada)</span>
-              <span className="stat-label-short">Kutilmoqda</span>
-            </div>
+            <div className="l">Kutilmoqda</div>
             <div className="sparkline">
-              <span className="sparkline-bar" style={{ height: '50%', background: 'var(--pend)' }} />
-              <span className="sparkline-bar" style={{ height: '70%', background: 'var(--pend)' }} />
-              <span className="sparkline-bar" style={{ height: '60%', background: 'var(--pend)' }} />
-              <span className="sparkline-bar" style={{ height: '85%', background: 'var(--pend)' }} />
+              <span className="sparkline-bar" style={{ height: '50%' }} />
+              <span className="sparkline-bar" style={{ height: '70%' }} />
+              <span className="sparkline-bar" style={{ height: '60%' }} />
+              <span className="sparkline-bar" style={{ height: '85%' }} />
             </div>
-            <div className="stat-trend neutral">Ochilmagan</div>
+            <div className="stat-trend">⏳ Ochilmagan</div>
           </div>
 
-          <div className="card stat">
+          {/* 3. Ko‘rildi — KULRANGDA (Gray / Slate) */}
+          <div
+            className={`card stat clickable-stat-card stat-card-in-progress ${statusFilter === 'in_progress' ? 'active' : ''}`}
+            onClick={() => setStatusFilter((prev) => (prev === 'in_progress' ? '' : 'in_progress'))}
+            role="button"
+            tabIndex={0}
+            title="Ko‘rilgan — hozir bajarilayotgan topshiriqlar"
+          >
             <div className="n">{countInProgress}</div>
-            <div className="l">
-              <span className="stat-label-full">Ko‘rildi (ushbu sahifada)</span>
-              <span className="stat-label-short">Ko‘rildi</span>
-            </div>
+            <div className="l">Ko‘rildi</div>
             <div className="sparkline">
-              <span className="sparkline-bar" style={{ height: '45%', background: 'var(--info)' }} />
-              <span className="sparkline-bar" style={{ height: '65%', background: 'var(--info)' }} />
-              <span className="sparkline-bar" style={{ height: '85%', background: 'var(--info)' }} />
-              <span className="sparkline-bar" style={{ height: '100%', background: 'var(--info)' }} />
+              <span className="sparkline-bar" style={{ height: '45%' }} />
+              <span className="sparkline-bar" style={{ height: '65%' }} />
+              <span className="sparkline-bar" style={{ height: '85%' }} />
+              <span className="sparkline-bar" style={{ height: '100%' }} />
             </div>
-            <div className="stat-trend neutral">Bajarishda</div>
+            <div className="stat-trend">👀 Bajarishda</div>
           </div>
 
-          <div className="card stat">
+          {/* 4. Rahbar tasdig‘ida — SARIQDA (Yellow / Amber) */}
+          <div
+            className={`card stat clickable-stat-card stat-card-submitted ${statusFilter === 'submitted' ? 'active' : ''}`}
+            onClick={() => setStatusFilter((prev) => (prev === 'submitted' ? '' : 'submitted'))}
+            role="button"
+            tabIndex={0}
+            title="Rahbar tasdig‘i kutilmoqda (hisobot topshirilgan / qayta ishlov)"
+          >
             <div className="n">{countSubmitted}</div>
-            <div className="l">
-              <span className="stat-label-full">Jarayonda / tasdiqda</span>
-              <span className="stat-label-short">Jarayonda</span>
-            </div>
+            <div className="l">Rahbar tasdig‘ida</div>
             <div className="sparkline">
-              <span className="sparkline-bar" style={{ height: '35%', background: 'var(--warn)' }} />
-              <span className="sparkline-bar" style={{ height: '60%', background: 'var(--warn)' }} />
-              <span className="sparkline-bar" style={{ height: '80%', background: 'var(--warn)' }} />
+              <span className="sparkline-bar" style={{ height: '35%' }} />
+              <span className="sparkline-bar" style={{ height: '60%' }} />
+              <span className="sparkline-bar" style={{ height: '80%' }} />
             </div>
-            <div className="stat-trend positive">Yuborilgan</div>
+            <div className="stat-trend">📝 Yuborilgan</div>
           </div>
 
-          <div className="card stat">
+          {/* 5. Bajarilgan — YASHILDA (Green) */}
+          <div
+            className={`card stat clickable-stat-card stat-card-completed ${statusFilter === 'completed' ? 'active' : ''}`}
+            onClick={() => setStatusFilter((prev) => (prev === 'completed' ? '' : 'completed'))}
+            role="button"
+            tabIndex={0}
+            title="Bajarilgan — rahbar tomonidan tasdiqlangan topshiriqlar"
+          >
             <div className="n">{countCompleted}</div>
-            <div className="l">
-              <span className="stat-label-full">Bajarilgan (ushbu sahifada)</span>
-              <span className="stat-label-short">Bajarildi</span>
-            </div>
+            <div className="l">Bajarilgan</div>
             <div className="sparkline">
-              <span className="sparkline-bar" style={{ height: '60%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '75%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '90%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '100%', background: 'var(--ok)' }} />
+              <span className="sparkline-bar" style={{ height: '60%' }} />
+              <span className="sparkline-bar" style={{ height: '75%' }} />
+              <span className="sparkline-bar" style={{ height: '90%' }} />
+              <span className="sparkline-bar" style={{ height: '100%' }} />
             </div>
-            <div className="stat-trend positive">✓ Yakunlandi</div>
+            <div className="stat-trend">✓ Yakunlandi</div>
           </div>
         </div>
 

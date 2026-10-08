@@ -15,4 +15,12 @@ function verifyToken(token) {
   return jwt.verify(token, SECRET);
 }
 
-module.exports = { signToken, verifyToken };
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  path: '/',
+};
+
+module.exports = { signToken, verifyToken, COOKIE_OPTIONS };

@@ -3,6 +3,7 @@
  */
 const UserService = require('../services/user.service');
 const TaskModel = require('../models/task.model');
+const { signToken, COOKIE_OPTIONS } = require('../utils/jwt');
 
 const UserController = {
   // GET /users/:id — retrieve user profile & task statistics (admin, or the employee themselves)
@@ -66,6 +67,17 @@ const UserController = {
   async updateProfile(req, res) {
     const { name, position, avatar } = req.body;
     const updated = await UserService.updateProfile(req.user.id, { name, position, avatar });
+
+    // Refresh JWT cookie so authentication token reflects updated name/position/avatar
+    const token = signToken({
+      id: updated.id,
+      role: updated.role,
+      name: updated.name,
+      position: updated.position,
+      avatar: updated.avatar,
+    });
+    res.cookie('token', token, COOKIE_OPTIONS);
+
     res.json({
       data: {
         id: updated.id,

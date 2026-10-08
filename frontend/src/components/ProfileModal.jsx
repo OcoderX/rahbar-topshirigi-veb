@@ -10,7 +10,7 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
   const [name, setName] = useState(user?.name || '');
   const [position, setPosition] = useState(user?.position || '');
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '');
-  const [avatarData, setAvatarData] = useState(null); // base64 string
+  const [avatarData, setAvatarData] = useState(null); // base64 string or '' if removed
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,12 +55,12 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
         name: name.trim(),
         position: position.trim(),
       };
-      if (avatarData) {
+      if (avatarData !== null) {
         payload.avatar = avatarData;
       }
 
       const res = await userApi.updateProfile(payload);
-      const updatedUser = res.data;
+      const updatedUser = res?.data || res;
 
       // Update in auth context & local storage
       updateUser(updatedUser);
@@ -97,6 +97,7 @@ export default function ProfileModal({ onClose, onProfileUpdated }) {
             <div className="profile-avatar-preview-wrap">
               {avatarPreview ? (
                 <img
+                  key={avatarPreview}
                   src={avatarPreview}
                   alt={name}
                   className="profile-avatar-preview-img"

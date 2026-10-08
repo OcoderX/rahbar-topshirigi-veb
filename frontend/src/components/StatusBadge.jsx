@@ -1,14 +1,21 @@
 const LABELS = {
   pending: 'Kutilmoqda',
+  in_progress: 'Xodim ko‘rgan',
+  submitted: 'Tasdiq kutilmoqda',
+  completed: 'Bajarildi',
+};
+
+const EMPLOYEE_LABELS = {
+  pending: 'Kutilmoqda',
   in_progress: 'Ko‘rildi',
-  submitted: 'Jarayonda',
+  submitted: 'Rahbar tasdig‘ida',
   completed: 'Bajarildi',
 };
 
 const TOOLTIPS = {
   pending: 'Kutilmoqda (vazifa hali ochilmagan, ko‘rilmagan)',
-  in_progress: 'Ko‘rildi (ko‘rilgan, ammo bajarilmagan)',
-  submitted: 'Jarayonda (Rahbar hali tasdiqlab qabul qilmagan)',
+  in_progress: 'Xodim tomonidan ko‘rilgan (ustida ishlanmoqda)',
+  submitted: 'Rahbar tasdig‘i kutilmoqda (hisobot topshirilgan)',
   completed: 'Bajarildi (Rahbar tasdiqlagan va yakunlangan)',
 };
 
@@ -20,15 +27,17 @@ export function getTaskStatusClass(task) {
   return `task-status-${task.status || 'pending'}`;
 }
 
-export default function StatusBadge({ status, reworkRequired = false }) {
+export default function StatusBadge({ status, reworkRequired = false, isEmployee = false }) {
   const isRework = reworkRequired && status === 'in_progress';
+  const labelMap = isEmployee ? EMPLOYEE_LABELS : LABELS;
+
   return (
     <span
       className={`badge ${isRework ? 'rework' : status}`}
       title={isRework ? 'Rahbar tomonidan qayta ishlashga qaytarilgan' : TOOLTIPS[status] || ''}
     >
       <span className="pip" />
-      {isRework ? 'Qayta ishlovda' : LABELS[status] || status}
+      {isRework ? 'Qayta ishlovda' : labelMap[status] || status}
     </span>
   );
 }

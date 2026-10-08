@@ -534,6 +534,34 @@ def _employees_sheet(ws: Worksheet, ranked: list) -> None:
         _data_bar(ws, col["Bajarilish %"], last, 1, SOLID["green"])
         _data_bar(ws, col["Samaradorlik bali"], last, 100, SOLID["blue"])
 
+def _format_media_list(items):
+    if not items:
+        return NOT_APPLICABLE
+    if isinstance(items, str):
+        try:
+            items = json.loads(items)
+        except Exception:
+            return items or NOT_APPLICABLE
+    if not isinstance(items, list) or len(items) == 0:
+        return NOT_APPLICABLE
+    parts = []
+    for item in items:
+        if isinstance(item, dict):
+            name = item.get("name") or "fayl"
+            mtype = (item.get("type") or "").lower()
+            lname = name.lower()
+            if "image" in mtype or lname.endswith((".png", ".jpg", ".jpeg", ".webp")):
+                parts.append(f"[Rasm] {name}")
+            elif "video" in mtype or lname.endswith((".mp4", ".webm", ".mov")):
+                parts.append(f"[Video] {name}")
+            elif "audio" in mtype or lname.endswith((".mp3", ".ogg", ".wav", ".webm")):
+                parts.append(f"[Ovoz] {name}")
+            else:
+                parts.append(f"[Fayl] {name}")
+        elif isinstance(item, str):
+            parts.append(item)
+    return ", ".join(parts) if parts else NOT_APPLICABLE
+
 def _tasks_sheet(ws: Worksheet, tasks: list, author: dict, now: datetime) -> None:
     columns = [
         Column("ID", 6), Column("Vazifa", 32, text=True), Column("Tavsif", 40, text=True),
@@ -542,6 +570,11 @@ def _tasks_sheet(ws: Worksheet, tasks: list, author: dict, now: datetime) -> Non
         Column("Holat", 15), Column("Berilgan", 16), Column("Muddat", 12, DATE_FMT),
         Column("Bajarilgan", 16), Column("Muddatga rioya", 16),
         Column("Qayta ishlash", 16), Column("Rad etish sababi", 34, text=True),
+        Column("Xodim hisoboti (Izoh)", 36, text=True),
+        Column("Xodim ovozli hisoboti", 25, text=True),
+        Column("Ijro dalillari (Media)", 36, text=True),
+        Column("Rahbar ovozli topshirig'i", 25, text=True),
+        Column("Topshiriq materiallari", 32, text=True),
     ]
     ordered = sorted(tasks, key=lambda t: (t.get("assignee_name") or "").lower())
     rows = []
@@ -556,6 +589,12 @@ def _tasks_sheet(ws: Worksheet, tasks: list, author: dict, now: datetime) -> Non
         updated_at = parse_date(t.get("updated_at"))
         completed_val = updated_at if t.get("status") == "completed" else None
         status_label = STATUS_LABELS.get(t.get("status"), t.get("status"))
+
+        completion_note = t.get("completion_note") or NOT_APPLICABLE
+        completion_audio = t.get("completion_audio") or NOT_APPLICABLE
+        completion_media = _format_media_list(t.get("completion_attachments"))
+        leader_audio = t.get("audio_url") or NOT_APPLICABLE
+        leader_attachments = _format_media_list(t.get("attachments"))
 
         rows.append([
             t.get("id"),
@@ -574,6 +613,11 @@ def _tasks_sheet(ws: Worksheet, tasks: list, author: dict, now: datetime) -> Non
                 f"Qaytarilgan: {t.get('rework_count')} marta" if t.get("rework_count") else NOT_APPLICABLE
             ),
             t.get("rework_reason") or NOT_APPLICABLE,
+            completion_note,
+            completion_audio,
+            completion_media,
+            leader_audio,
+            leader_attachments,
         ])
 
     col = _data_sheet(ws, columns, rows, SOLID["blue"])

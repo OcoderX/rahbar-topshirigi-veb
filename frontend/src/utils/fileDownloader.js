@@ -95,16 +95,12 @@ export async function downloadAttachment(att) {
     const res = await fetch(att.url);
     blob = await res.blob();
   } else {
-    // 2. Fetch from backend with authentication token
-    const token = localStorage.getItem('token');
+    // 2. Fetch from backend with session cookie
     const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
-    const downloadUrl = `${apiUrl}/tasks/download?url=${encodeURIComponent(att.url)}&name=${encodeURIComponent(filename)}${token ? `&token=${token}` : ''}`;
-
-    const headers = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const downloadUrl = `${apiUrl}/tasks/download?url=${encodeURIComponent(att.url)}&name=${encodeURIComponent(filename)}`;
 
     try {
-      const res = await fetch(downloadUrl, { headers });
+      const res = await fetch(downloadUrl, { credentials: 'include' });
       if (!res.ok) {
         // Fallback: try direct url
         const fallbackUrl = att.url.startsWith('http') ? att.url : `${apiUrl}${att.url}`;

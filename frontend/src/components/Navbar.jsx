@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import ProfileModal from './ProfileModal';
 
-export default function Navbar({ onOpenSidebar, onOpenCommandPalette }) {
+export default function Navbar({ onOpenSidebar, onOpenCommandPalette, onProfileUpdated }) {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -101,6 +101,7 @@ export default function Navbar({ onOpenSidebar, onOpenCommandPalette }) {
                 <div className="nav-avatar-wrap">
                   {user.avatar ? (
                     <img
+                      key={user.avatar}
                       src={user.avatar}
                       alt={user.name}
                       className="user-avatar-img"
@@ -138,7 +139,10 @@ export default function Navbar({ onOpenSidebar, onOpenCommandPalette }) {
       </nav>
 
       {profileOpen && (
-        <ProfileModal onClose={() => setProfileOpen(false)} />
+        <ProfileModal
+          onClose={() => setProfileOpen(false)}
+          onProfileUpdated={onProfileUpdated}
+        />
       )}
     </>
   );

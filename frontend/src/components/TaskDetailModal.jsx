@@ -7,9 +7,18 @@ import { formatDateTime } from '../utils/date';
 import { useToast } from './Toast';
 import { downloadAttachment } from '../utils/fileDownloader';
 import { triggerConfetti } from '../utils/confetti';
+import { openTaskReportPrintWindow, downloadTaskReportHtmlFile } from '../utils/reportExporter';
 
 function formatDate(isoStr) {
   return formatDateTime(isoStr);
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return '';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 function getFileIcon(name = '', type = '') {
@@ -36,6 +45,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
   const [approving, setApproving] = useState(false);
   const [playingAudio, setPlayingAudio] = useState(null); // url of currently playing audio
   const [downloadingFile, setDownloadingFile] = useState(null);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const audioRefs = useRef({});
 
@@ -66,7 +76,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
     }
   }, [initialTask]);
 
-  // When an employee opens a pending task, automatically mark it as viewed / in_progress!
+  // When an employee opens a pending task, automatically mark it as viewed / in_progress
   useEffect(() => {
     if (isEmployee && initialTask && initialTask.status === 'pending') {
       taskApi.markViewed(initialTask.id)
@@ -183,13 +193,25 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
     (task.completion_attachments && task.completion_attachments.length > 0)
   );
 
+  // Group initial attachments
+  const initialAtts = Array.isArray(task.attachments) ? task.attachments : [];
+  const initialImages = initialAtts.filter((a) => (a.type || '').startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(a.name || ''));
+  const initialVideos = initialAtts.filter((a) => (a.type || '').startsWith('video/') || /\.(mp4|webm)$/i.test(a.name || ''));
+  const initialDocs = initialAtts.filter((a) => !initialImages.includes(a) && !initialVideos.includes(a));
+
+  // Group completion attachments (Ijro dalillari)
+  const completionAtts = Array.isArray(task.completion_attachments) ? task.completion_attachments : [];
+  const completionImages = completionAtts.filter((a) => (a.type || '').startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(a.name || ''));
+  const completionVideos = completionAtts.filter((a) => (a.type || '').startsWith('video/') || /\.(mp4|webm)$/i.test(a.name || ''));
+  const completionDocs = completionAtts.filter((a) => !completionImages.includes(a) && !completionVideos.includes(a));
+
   return (
     <div className="overlay task-detail-overlay" onMouseDown={onClose}>
       <div className="modal task-detail-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
             <div className="detail-status-row">
-              <StatusBadge status={task.status} />
+              <StatusBadge status={task.status} isEmployee={isEmployee} />
               {task.rework_required && (
                 <span className="badge rework">
                   <span className="pip" />
@@ -203,16 +225,26 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
             <h2 className="detail-title">{task.title}</h2>
           </div>
 
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>
-            ✕
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+            <button
+              type="button"
+              className="btn btn-outline-accent btn-sm"
+              onClick={() => openTaskReportPrintWindow(task)}
+              title="Topshiriq va barcha media ijro dalillarini PDF / chop etish formatida yuklab olish"
+            >
+              📄 Hisobotni yuklab olish (PDF)
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={onClose}>
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="modal-body detail-modal-body">
           {/* Timeline and Personnel */}
           <div className="detail-timeline-card">
             <div className="timeline-item">
-              <span className="t-label">Mas’ul:</span>
+              <span className="t-label">Mas’ul ijrochi:</span>
               <span className="t-val">
                 <strong>{task.assignee_name || 'Biriktirilmagan'}</strong>
                 {task.assignee_position && ` (${task.assignee_position})`}
@@ -220,7 +252,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
             </div>
             {task.created_at && (
               <div className="timeline-item">
-                <span className="t-label">Topshiriq berilgan vaqt:</span>
+                <span className="t-label">Topshiriq berilgan:</span>
                 <span className="t-val">
                   <strong>{formatDate(task.created_at)}</strong>
                 </span>
@@ -234,7 +266,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
             </div>
             {task.viewed_at && (
               <div className="timeline-item">
-                <span className="t-label">Qabul qilgan vaqt:</span>
+                <span className="t-label">Xodim ko‘rgan vaqt:</span>
                 <span className="t-val">{formatDate(task.viewed_at)}</span>
               </div>
             )}
@@ -282,7 +314,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
           {/* Description */}
           {task.description && (
             <div className="detail-section">
-              <div className="detail-section-title">Topshiriq mazmuni</div>
+              <div className="detail-section-title">📋 Topshiriq mazmuni</div>
               <p className="detail-description-text">{task.description}</p>
             </div>
           )}
@@ -290,7 +322,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
           {/* Leader's Voice Memo */}
           {task.audio_url && (
             <div className="detail-section">
-              <div className="detail-section-title">🎙️ Rahbarning ovozli xabari</div>
+              <div className="detail-section-title">🎙️ Rahbarning ovozli ko‘rsatmasi</div>
               <div className="detail-audio-player">
                 <audio
                   ref={(el) => (audioRefs.current[task.audio_url] = el)}
@@ -309,28 +341,69 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
             </div>
           )}
 
-          {/* Leader's Attachments (Excel, PDF, Images, Videos) */}
-          {task.attachments && task.attachments.length > 0 && (
+          {/* Leader's Initial Attachments Gallery */}
+          {initialAtts.length > 0 && (
             <div className="detail-section">
-              <div className="detail-section-title">📎 Biriktirilgan fayllar ({task.attachments.length})</div>
-              <div className="detail-attachments-grid">
-                {task.attachments.map((att, i) => {
-                  const isImg = att.type?.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(att.name);
-                  const isVid = att.type?.startsWith('video/') || /\.(mp4|webm)$/i.test(att.name);
+              <div className="detail-section-title">📎 Topshiriq materiallari ({initialAtts.length})</div>
 
-                  return (
-                    <div key={i} className="detail-attachment-card">
-                      {isImg ? (
-                        <a href={att.url} target="_blank" rel="noreferrer" className="img-preview-link">
-                          <img src={att.url} alt={att.name} className="detail-img-preview" />
-                        </a>
-                      ) : isVid ? (
-                        <div className="video-preview-wrap">
-                          <video src={att.url} controls className="detail-video-preview" />
+              {/* Photos & Videos in uniform gallery */}
+              {(initialImages.length > 0 || initialVideos.length > 0) && (
+                <div className="detail-media-gallery">
+                  {initialImages.map((att, i) => (
+                    <div key={`img-${i}`} className="media-gallery-card">
+                      <div className="media-gallery-thumb" onClick={() => setLightboxSrc(att.url)}>
+                        <span className="media-gallery-badge">📷 Rasm</span>
+                        <img src={att.url} alt={att.name} />
+                        <button type="button" className="media-gallery-zoom-btn" title="Kattalashtirish">🔍</button>
+                      </div>
+                      <div className="media-gallery-info">
+                        <span className="media-gallery-name" title={att.name}>{att.name}</span>
+                        <div className="media-gallery-footer">
+                          <span className="media-gallery-size">{formatFileSize(att.size)}</span>
+                          <button
+                            type="button"
+                            className="media-gallery-dl-btn"
+                            onClick={() => handleDownload(att)}
+                            disabled={downloadingFile === att.name}
+                          >
+                            Yuklab olish ⬇
+                          </button>
                         </div>
-                      ) : (
-                        <div className="file-icon-box">{getFileIcon(att.name, att.type)}</div>
-                      )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {initialVideos.map((att, i) => (
+                    <div key={`vid-${i}`} className="media-gallery-card">
+                      <div className="media-gallery-thumb">
+                        <span className="media-gallery-badge">🎥 Video</span>
+                        <video src={att.url} controls />
+                      </div>
+                      <div className="media-gallery-info">
+                        <span className="media-gallery-name" title={att.name}>{att.name}</span>
+                        <div className="media-gallery-footer">
+                          <span className="media-gallery-size">{formatFileSize(att.size)}</span>
+                          <button
+                            type="button"
+                            className="media-gallery-dl-btn"
+                            onClick={() => handleDownload(att)}
+                            disabled={downloadingFile === att.name}
+                          >
+                            Yuklab olish ⬇
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Documents */}
+              {initialDocs.length > 0 && (
+                <div className="detail-attachments-grid" style={{ marginTop: '.75rem' }}>
+                  {initialDocs.map((att, i) => (
+                    <div key={`doc-${i}`} className="detail-attachment-card">
+                      <div className="file-icon-box">{getFileIcon(att.name, att.type)}</div>
                       <div className="detail-file-info">
                         <span className="detail-file-name" title={att.name}>{att.name}</span>
                         <button
@@ -338,27 +411,36 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                           className="btn-file-download"
                           onClick={() => handleDownload(att)}
                           disabled={downloadingFile === att.name}
-                          title="Faylni o‘z nomida va formatida kompyuterga saqlash"
                         >
                           {downloadingFile === att.name ? 'Saqlanmoqda…' : 'Yuklab olish ⬇'}
                         </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Execution Report Section */}
+          {/* Execution Report Section (Ijro hisoboti va dalillar) */}
           {hasCompletionReport && (
             <div className="detail-section completed-report-box">
-              <div className="detail-section-title green-title">
-                {isCompleted
-                  ? '✓ Xodimning ijro hisoboti (Topshiriq bajarilgan)'
-                  : task.rework_required
-                    ? '⚠️ Qaytarilgan oldingi hisobot'
-                    : 'Oldingi topshirilgan ijro hisoboti'}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.6rem' }}>
+                <div className="detail-section-title green-title" style={{ margin: 0 }}>
+                  {isCompleted
+                    ? '✓ Xodimning ijro hisoboti (Topshiriq bajarilgan)'
+                    : task.rework_required
+                      ? '⚠️ Qaytarilgan oldingi hisobot'
+                      : '📝 Topshirilgan ijro hisoboti'}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline-accent btn-sm"
+                  onClick={() => openTaskReportPrintWindow(task)}
+                  title="Ijro dalolatnomasini rasmiy formatda chop etish yoki PDF saqlash"
+                >
+                  🖨️ Dalolatnoma (PDF)
+                </button>
               </div>
 
               {isCompleted && (
@@ -375,15 +457,19 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                       </span>
                       {task.completed_at && (
                         <span className="approval-meta-pill time">
-                          <strong>Tasdiqlangan sana va vaqt:</strong> {formatDate(task.completed_at)}
+                          <strong>Tasdiqlangan vaqt:</strong> {formatDate(task.completed_at)}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
               )}
+
               {task.completion_note && (
-                <p className="completion-note-text">«{task.completion_note}»</p>
+                <div style={{ margin: '.75rem 0' }}>
+                  <span className="sub-label">Ijro izohi (Xabar):</span>
+                  <p className="completion-note-text">«{task.completion_note}»</p>
+                </div>
               )}
 
               {task.completion_audio && (
@@ -404,28 +490,84 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                 </div>
               )}
 
-              {task.completion_attachments && task.completion_attachments.length > 0 && (
-                <div className="completion-attachments-list">
-                  <span className="sub-label">Topshirilgan fayllar:</span>
-                  <div className="detail-attachments-grid">
-                    {task.completion_attachments.map((att, i) => (
-                      <div key={i} className="detail-attachment-card">
-                        <div className="file-icon-box">{getFileIcon(att.name, att.type)}</div>
-                        <div className="detail-file-info">
-                          <span className="detail-file-name" title={att.name}>{att.name}</span>
-                          <button
-                            type="button"
-                            className="btn-file-download"
-                            onClick={() => handleDownload(att)}
-                            disabled={downloadingFile === att.name}
-                            title="Faylni o‘z nomida va formatida kompyuterga saqlash"
-                          >
-                            {downloadingFile === att.name ? 'Saqlanmoqda…' : 'Yuklab olish ⬇'}
-                          </button>
+              {/* Completion Media Gallery: Photos, Videos & Files in uniform layout */}
+              {completionAtts.length > 0 && (
+                <div className="completion-attachments-list" style={{ marginTop: '1rem' }}>
+                  <span className="sub-label">
+                    🖼️ Ijro dalillari — Fotosuratlar va Medialar ({completionAtts.length} ta):
+                  </span>
+
+                  {(completionImages.length > 0 || completionVideos.length > 0) && (
+                    <div className="detail-media-gallery">
+                      {completionImages.map((att, i) => (
+                        <div key={`comp-img-${i}`} className="media-gallery-card">
+                          <div className="media-gallery-thumb" onClick={() => setLightboxSrc(att.url)}>
+                            <span className="media-gallery-badge">📷 Ijro surati</span>
+                            <img src={att.url} alt={att.name} />
+                            <button type="button" className="media-gallery-zoom-btn" title="Kattalashtirish">🔍</button>
+                          </div>
+                          <div className="media-gallery-info">
+                            <span className="media-gallery-name" title={att.name}>{att.name}</span>
+                            <div className="media-gallery-footer">
+                              <span className="media-gallery-size">{formatFileSize(att.size)}</span>
+                              <button
+                                type="button"
+                                className="media-gallery-dl-btn"
+                                onClick={() => handleDownload(att)}
+                                disabled={downloadingFile === att.name}
+                              >
+                                Yuklab olish ⬇
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+
+                      {completionVideos.map((att, i) => (
+                        <div key={`comp-vid-${i}`} className="media-gallery-card">
+                          <div className="media-gallery-thumb">
+                            <span className="media-gallery-badge">🎥 Video dalil</span>
+                            <video src={att.url} controls />
+                          </div>
+                          <div className="media-gallery-info">
+                            <span className="media-gallery-name" title={att.name}>{att.name}</span>
+                            <div className="media-gallery-footer">
+                              <span className="media-gallery-size">{formatFileSize(att.size)}</span>
+                              <button
+                                type="button"
+                                className="media-gallery-dl-btn"
+                                onClick={() => handleDownload(att)}
+                                disabled={downloadingFile === att.name}
+                              >
+                                Yuklab olish ⬇
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {completionDocs.length > 0 && (
+                    <div className="detail-attachments-grid" style={{ marginTop: '.75rem' }}>
+                      {completionDocs.map((att, i) => (
+                        <div key={`comp-doc-${i}`} className="detail-attachment-card">
+                          <div className="file-icon-box">{getFileIcon(att.name, att.type)}</div>
+                          <div className="detail-file-info">
+                            <span className="detail-file-name" title={att.name}>{att.name}</span>
+                            <button
+                              type="button"
+                              className="btn-file-download"
+                              onClick={() => handleDownload(att)}
+                              disabled={downloadingFile === att.name}
+                            >
+                              {downloadingFile === att.name ? 'Saqlanmoqda…' : 'Yuklab olish ⬇'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -439,7 +581,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                         onClick={handleApprove}
                         disabled={approving}
                       >
-                        {approving ? 'Tasdiqlanmoqda…' : 'Tasdiqlash va bajarildi qilish'}
+                        {approving ? 'Tasdiqlanmoqda…' : '✓ Tasdiqlash va bajarildi qilish'}
                       </button>
                       <button
                         type="button"
@@ -491,6 +633,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
             </div>
           )}
 
+          {/* Form for Employee to submit report */}
           {task.status === 'in_progress' && isEmployee && (
             <div className="detail-section execution-form-box">
               <div className="detail-section-title">
@@ -501,7 +644,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
               <p className="sub-text">
                 {task.rework_required
                   ? 'Rahbar ko‘rsatgan kamchiliklarni to‘g‘rilab, yangi/tuzatilgan fayllar, izoh yoki ovozli xabarni biriktiring va qayta yuboring.'
-                  : 'Natija fayllari va izohni biriktirib, rahbar tasdig‘iga yuboring. Rahbar tasdiqlagandan keyingina topshiriq bajarilgan hisoblanadi.'}
+                  : 'Natija fayllari, fotosuratlar, videolar va izohni biriktirib, rahbar tasdig‘iga yuboring. Rahbar tasdiqlagandan keyingina topshiriq bajarilgan hisoblanadi.'}
               </p>
 
               <div className="field">
@@ -509,7 +652,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                   <label htmlFor="task-report-note">
                     {task.rework_required
                       ? 'Tuzatilgan ijro izohi (hisobot)'
-                      : 'Ijro to‘g‘risida izoh (hisobot)'}
+                      : 'Ijro to‘g‘risida izoh (hisobot xabari)'}
                   </label>
                   <VoiceRecorder
                     audioUrl={reportAudio}
@@ -533,8 +676,8 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
                   onChange={setReportAttachments}
                   label={
                     task.rework_required
-                      ? 'Yangi / to‘g‘rilangan natija fayllari (Excel, PDF, Rasm, Video)'
-                      : 'Natija fayllari (Excel hisobot, PDF dalolatnoma, Rasm, Video)'
+                      ? 'Yangi / to‘g‘rilangan natija fayllari (Fotosurat, Video, Excel, PDF)'
+                      : 'Ijro dalillari va fayllar (Fotosurat, Video, Excel hisobot, PDF dalolatnoma)'
                   }
                 />
               </div>
@@ -561,6 +704,23 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
           </button>
         </div>
       </div>
+
+      {/* Lightbox for high-res photo viewing */}
+      {lightboxSrc && (
+        <div className="lightbox-backdrop" onClick={() => setLightboxSrc(null)}>
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="lightbox-close"
+              onClick={() => setLightboxSrc(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
+            <img src={lightboxSrc} alt="Kattalashtirilgan rasm" className="lightbox-img" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

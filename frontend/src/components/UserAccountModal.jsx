@@ -137,9 +137,9 @@ export default function UserAccountModal({
     const segments = [
       { key: 'completed', label: 'Bajarilgan', color: '#10b981', count: completedCount },
       { key: 'submitted', label: 'Hisobot topshirilgan', color: '#f59e0b', count: submittedCount },
-      { key: 'in_progress', label: 'Ko‘rib chiqilmoqda', color: '#3b82f6', count: statusCounts.in_progress || 0 },
-      { key: 'pending', label: 'Kutilmoqda', color: '#ea580c', count: pendingCount },
-      { key: 'rework', label: 'Qayta ishlovda', color: '#ef4444', count: reworkCount },
+      { key: 'in_progress', label: 'Ko‘rib chiqilmoqda', color: '#64748b', count: statusCounts.in_progress || 0 },
+      { key: 'pending', label: 'Kutilmoqda', color: '#ef4444', count: pendingCount },
+      { key: 'rework', label: 'Qayta ishlovda', color: '#d97706', count: reworkCount },
     ];
 
     const circumference = 2 * Math.PI * 45; // r=45 => ~282.74
@@ -335,15 +335,15 @@ export default function UserAccountModal({
 
               {/* Row 2: Active Pipeline Statuses */}
               <div className="profile-kpi-card in-progress">
-                <div className="kpi-icon-wrap">⚡</div>
+                <div className="kpi-icon-wrap">👀</div>
                 <div className="kpi-data">
                   <div className="kpi-label">Ko‘rib chiqilmoqda</div>
-                  <div className="kpi-value text-blue">{statusCounts.in_progress || 0} <span className="kpi-unit">ta</span></div>
+                  <div className="kpi-value" style={{ color: '#64748b' }}>{statusCounts.in_progress || 0} <span className="kpi-unit">ta</span></div>
                 </div>
                 <div className="kpi-sub-progress">
                   <div
-                    className="kpi-sub-bar blue"
-                    style={{ width: `${totalTasks > 0 ? ((statusCounts.in_progress || 0) / totalTasks) * 100 : 0}%` }}
+                    className="kpi-sub-bar"
+                    style={{ background: '#64748b', width: `${totalTasks > 0 ? ((statusCounts.in_progress || 0) / totalTasks) * 100 : 0}%` }}
                   />
                 </div>
               </div>
@@ -366,12 +366,12 @@ export default function UserAccountModal({
                 <div className="kpi-icon-wrap">🕒</div>
                 <div className="kpi-data">
                   <div className="kpi-label">Kutilmoqda (yangi)</div>
-                  <div className="kpi-value text-terracotta">{pendingCount} <span className="kpi-unit">ta</span></div>
+                  <div className="kpi-value" style={{ color: '#dc2626' }}>{pendingCount} <span className="kpi-unit">ta</span></div>
                 </div>
                 <div className="kpi-sub-progress">
                   <div
-                    className="kpi-sub-bar terracotta"
-                    style={{ width: `${totalTasks > 0 ? (pendingCount / totalTasks) * 100 : 0}%` }}
+                    className="kpi-sub-bar"
+                    style={{ background: '#ef4444', width: `${totalTasks > 0 ? (pendingCount / totalTasks) * 100 : 0}%` }}
                   />
                 </div>
               </div>

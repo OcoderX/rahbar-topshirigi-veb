@@ -399,6 +399,8 @@ const TaskService = {
       author: { name: actor.name, email: actor.email },
       users: employees,
       tasks,
+      uploadsDir: path.resolve(__dirname, '../../uploads'),
+      serverUrl: process.env.BASE_URL || 'http://localhost:5000',
     };
 
     const scriptPath = path.join(__dirname, '..', 'utils', 'report_generator.py');

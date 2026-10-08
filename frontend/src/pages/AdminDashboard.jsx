@@ -13,6 +13,7 @@ import { useToast } from '../components/Toast';
 import { taskApi, userApi } from '../api/endpoints';
 import { formatDateTime, getRemainingTime } from '../utils/date';
 import { useCountUp } from '../utils/useCountUp';
+import { openBatchMultimediaReportWindow } from '../utils/reportExporter';
 
 const PAGE_SIZE = 20;
 
@@ -178,7 +179,7 @@ export default function AdminDashboard() {
     return `Barcha vazifalar (${total})`;
   }, [statusFilter, total]);
 
-  // Interactive handler for the 4 headline statistic cards.
+  // Interactive handler for the headline statistic cards.
   function handleCardClick(cardKey) {
     if (cardKey === 'accounts') {
       setActiveTab((prev) => (prev === 'accounts' ? 'tasks' : 'accounts'));
@@ -186,6 +187,14 @@ export default function AdminDashboard() {
     } else if (cardKey === 'all') {
       setActiveTab('tasks');
       setStatusFilter('');
+      setPage(1);
+    } else if (cardKey === 'pending') {
+      setActiveTab('tasks');
+      setStatusFilter((prev) => (prev === 'pending' ? '' : 'pending'));
+      setPage(1);
+    } else if (cardKey === 'in_progress') {
+      setActiveTab('tasks');
+      setStatusFilter((prev) => (prev === 'in_progress' ? '' : 'in_progress'));
       setPage(1);
     } else if (cardKey === 'submitted') {
       setActiveTab('tasks');
@@ -270,37 +279,17 @@ export default function AdminDashboard() {
         return;
       }
 
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('Avtorizatsiya tokeni topilmadi');
-
-      const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
-      const frameName = `excel-download-${Date.now()}`;
-      const frame = document.createElement('iframe');
-      const form = document.createElement('form');
-      const tokenInput = document.createElement('input');
-
-      frame.name = frameName;
-      frame.title = 'Excel hisobotini yuklab olish';
-      frame.hidden = true;
-
-      form.method = 'POST';
-      form.action = `${apiUrl}/tasks/export/excel/download`;
-      form.target = frameName;
-      form.hidden = true;
-
-      tokenInput.type = 'hidden';
-      tokenInput.name = 'download_token';
-      tokenInput.value = token;
-      form.appendChild(tokenInput);
-
-      document.body.append(frame, form);
-      form.submit();
-      form.remove();
-
-      // The response is a native attachment, so its Content-Disposition header
-      // controls the filename. Leave the target alive until generation finishes.
-      setTimeout(() => frame.remove(), 60_000);
-      push('Excel hisoboti yuklanmoqda…');
+      // Fallback for browsers without showSaveFilePicker
+      const { blob, filename } = await taskApi.exportExcel();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'hisobot.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+      push('Excel hisoboti yuklab olindi');
     } catch (err) {
       if (err.name === 'AbortError') return;
       push(err.message || 'Hisobotni yuklab olishda xatolik yuz berdi', 'error');
@@ -321,9 +310,11 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Smooth counting-up animated numbers (G'oya #3.2)
+  // Smooth counting-up animated numbers
   const countAccounts = useCountUp(accounts.length || (employees.length + 1) || 66);
   const countTotal = useCountUp(statusCounts.total || total);
+  const countPending = useCountUp(statusCounts.pending || 0);
+  const countInProgress = useCountUp(statusCounts.in_progress || 0);
   const countSubmitted = useCountUp(statusCounts.submitted || 0);
   const countCompleted = useCountUp(statusCounts.completed || 0);
 
@@ -332,6 +323,7 @@ export default function AdminDashboard() {
       <Navbar
         onOpenSidebar={() => setSidebarOpen(true)}
         onOpenCommandPalette={() => setCmdOpen(true)}
+        onProfileUpdated={loadAccounts}
       />
       <div className="container page">
         <header className="page-head">
@@ -361,6 +353,20 @@ export default function AdminDashboard() {
               </div>
             )}
             <button
+              id="btn-export-media"
+              className="btn btn-outline-accent"
+              onClick={() =>
+                openBatchMultimediaReportWindow({
+                  tasks,
+                  title: 'Topshiriqlar va Ijro Dalillari Multimedia Hisoboti',
+                  author: 'Andijon viloyati hokimligi rahbari',
+                })
+              }
+              title="Barcha topshiriqlar, ijro fotosuratlari, videolari va hisobotlarini o‘z ichiga olgan rasmiy multimedia hisobotini ochish (PDF/Chop etish)"
+            >
+              🖼️ Multimedia hisoboti (PDF)
+            </button>
+            <button
               id="btn-export-excel"
               className="btn btn-excel"
               onClick={handleExportExcel}
@@ -382,8 +388,9 @@ export default function AdminDashboard() {
 
         {error && <div className="error-banner">{error}</div>}
 
-        {/* Stat tiles with animated numbers, sparklines and trend pills (G'oya #3.2 & #9) */}
+        {/* 6 Stat tiles: Akkauntlar, Jami, Kutilmoqda (qizil), Xodim ko‘rgan (kulrang), Tasdiqda (sariq), Bajarilgan (yashil) */}
         <div className="stats">
+          {/* 1. Akkauntlar */}
           <div
             id="stat-card-accounts"
             className={`card stat clickable-stat-card ${activeTab === 'accounts' ? 'active' : ''}`}
@@ -405,6 +412,8 @@ export default function AdminDashboard() {
             </div>
             <div className="stat-trend neutral">👥 14 ta tuman</div>
           </div>
+
+          {/* 2. Jami vazifalar */}
           <div
             id="stat-card-all-tasks"
             className={`card stat clickable-stat-card ${activeTab === 'tasks' && !statusFilter ? 'active' : ''}`}
@@ -426,38 +435,96 @@ export default function AdminDashboard() {
             </div>
             <div className="stat-trend neutral">📊 Barcha statuslar</div>
           </div>
+
+          {/* 3. Kutilmoqda — QIZILDA (Red) */}
+          <div
+            id="stat-card-pending-tasks"
+            className={`card stat clickable-stat-card stat-card-pending ${activeTab === 'tasks' && statusFilter === 'pending' ? 'active' : ''}`}
+            onClick={() => handleCardClick('pending')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && handleCardClick('pending')}
+            title="Kutilmoqda — xodim hali ochmagan vazifalar"
+          >
+            <div className="n">{countPending}</div>
+            <div className="l">
+              <span className="stat-label-full">Kutilmoqda</span>
+              <span className="stat-label-short">Kutilmoqda</span>
+            </div>
+            <div className="sparkline">
+              <span className="sparkline-bar" style={{ height: '50%' }} />
+              <span className="sparkline-bar" style={{ height: '70%' }} />
+              <span className="sparkline-bar" style={{ height: '60%' }} />
+              <span className="sparkline-bar" style={{ height: '85%' }} />
+              <span className="sparkline-bar" style={{ height: '75%' }} />
+              <span className="sparkline-bar" style={{ height: '95%' }} />
+            </div>
+            <div className="stat-trend">⏳ Ochilmagan</div>
+          </div>
+
+          {/* 4. Xodim ko‘rgan — KULRANGDA (Gray / Slate) */}
+          <div
+            id="stat-card-inprogress-tasks"
+            className={`card stat clickable-stat-card stat-card-in-progress ${activeTab === 'tasks' && statusFilter === 'in_progress' ? 'active' : ''}`}
+            onClick={() => handleCardClick('in_progress')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && handleCardClick('in_progress')}
+            title="Xodim tomonidan ko‘rilgan va bajarilayotgan vazifalar"
+          >
+            <div className="n">{countInProgress}</div>
+            <div className="l">
+              <span className="stat-label-full">Xodim ko‘rgan</span>
+              <span className="stat-label-short">Ko‘rildi</span>
+            </div>
+            <div className="sparkline">
+              <span className="sparkline-bar" style={{ height: '40%' }} />
+              <span className="sparkline-bar" style={{ height: '60%' }} />
+              <span className="sparkline-bar" style={{ height: '55%' }} />
+              <span className="sparkline-bar" style={{ height: '80%' }} />
+              <span className="sparkline-bar" style={{ height: '70%' }} />
+              <span className="sparkline-bar" style={{ height: '90%' }} />
+            </div>
+            <div className="stat-trend">👀 Jarayonda</div>
+          </div>
+
+          {/* 5. Rahbar tasdig‘i kutilmoqda — SARIQDA (Yellow / Amber) */}
           <div
             id="stat-card-submitted-tasks"
-            className={`card stat clickable-stat-card ${activeTab === 'tasks' && statusFilter === 'submitted' ? 'active' : ''}`}
+            className={`card stat clickable-stat-card stat-card-submitted ${activeTab === 'tasks' && statusFilter === 'submitted' ? 'active' : ''}`}
             onClick={() => handleCardClick('submitted')}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && handleCardClick('submitted')}
-            title="Jarayonda va rahbar tasdig‘idagi vazifalarni saralash"
+            title="Rahbar tasdig‘i kutilayotgan va qayta ishlashdagi vazifalar"
           >
             <div className="n">{countSubmitted}</div>
             <div className="l">
-              <span className="stat-label-full">Jarayonda / tasdiqda</span>
-              <span className="stat-label-short">Jarayonda</span>
+              <span className="stat-label-full">Tasdiq kutilmoqda</span>
+              <span className="stat-label-short">Tasdiqda</span>
             </div>
             <div className="sparkline">
-              <span className="sparkline-bar" style={{ height: '35%', background: 'var(--warn)' }} />
-              <span className="sparkline-bar" style={{ height: '55%', background: 'var(--warn)' }} />
-              <span className="sparkline-bar" style={{ height: '50%', background: 'var(--warn)' }} />
-              <span className="sparkline-bar" style={{ height: '75%', background: 'var(--warn)' }} />
-              <span className="sparkline-bar" style={{ height: '65%', background: 'var(--warn)' }} />
-              <span className="sparkline-bar" style={{ height: '90%', background: 'var(--warn)' }} />
+              <span className="sparkline-bar" style={{ height: '35%' }} />
+              <span className="sparkline-bar" style={{ height: '55%' }} />
+              <span className="sparkline-bar" style={{ height: '50%' }} />
+              <span className="sparkline-bar" style={{ height: '75%' }} />
+              <span className="sparkline-bar" style={{ height: '65%' }} />
+              <span className="sparkline-bar" style={{ height: '90%' }} />
             </div>
-            <div className="stat-trend positive">⏳ Tasdiq kutilmoqda</div>
+            <div className="stat-trend">
+              {statusCounts.rework > 0 ? '📝 Qayta ishlov bilan' : '⏳ Tasdiq kutilmoqda'}
+            </div>
           </div>
+
+          {/* 6. Bajarilganlar — YASHILDA (Green) */}
           <div
             id="stat-card-completed-tasks"
-            className={`card stat clickable-stat-card ${activeTab === 'tasks' && statusFilter === 'completed' ? 'active' : ''}`}
+            className={`card stat clickable-stat-card stat-card-completed ${activeTab === 'tasks' && statusFilter === 'completed' ? 'active' : ''}`}
             onClick={() => handleCardClick('completed')}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && handleCardClick('completed')}
-            title="Bajarilgan vazifalarni saralash"
+            title="Bajarilgan va tasdiqlangan vazifalarni saralash"
           >
             <div className="n">{countCompleted}</div>
             <div className="l">
@@ -465,14 +532,14 @@ export default function AdminDashboard() {
               <span className="stat-label-short">Bajarildi</span>
             </div>
             <div className="sparkline">
-              <span className="sparkline-bar" style={{ height: '50%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '65%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '80%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '75%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '90%', background: 'var(--ok)' }} />
-              <span className="sparkline-bar" style={{ height: '100%', background: 'var(--ok)' }} />
+              <span className="sparkline-bar" style={{ height: '50%' }} />
+              <span className="sparkline-bar" style={{ height: '65%' }} />
+              <span className="sparkline-bar" style={{ height: '80%' }} />
+              <span className="sparkline-bar" style={{ height: '75%' }} />
+              <span className="sparkline-bar" style={{ height: '90%' }} />
+              <span className="sparkline-bar" style={{ height: '100%' }} />
             </div>
-            <div className="stat-trend positive">✓ Yakunlangan</div>
+            <div className="stat-trend">✓ Yakunlangan</div>
           </div>
         </div>
 

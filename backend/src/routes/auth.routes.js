@@ -33,4 +33,7 @@ router.post(
 // GET /auth/me  (returns current user from token)
 router.get('/me', authenticate, asyncHandler(AuthController.me));
 
+// POST /auth/logout  (clears auth cookie)
+router.post('/logout', asyncHandler(AuthController.logout));
+
 module.exports = router;

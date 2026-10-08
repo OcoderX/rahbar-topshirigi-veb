@@ -8,17 +8,26 @@ const { verifyToken } = require('../utils/jwt');
 const ApiError = require('../utils/ApiError');
 
 function authenticate(req, _res, next) {
-  const header = req.headers.authorization || '';
-  const [scheme, bearerToken] = header.split(' ');
-  const token = (scheme === 'Bearer' ? bearerToken : null) || req.query.token;
+  let token = req.cookies && req.cookies.token;
+  if (!token) {
+    const header = req.headers.authorization || '';
+    const [scheme, bearerToken] = header.split(' ');
+    token = scheme === 'Bearer' ? bearerToken : null;
+  }
 
   if (!token) {
-    return next(ApiError.unauthorized('Avtorizatsiya sarlavhasi (header) topilmadi yoki noto‘g‘ri'));
+    return next(ApiError.unauthorized('Avtorizatsiya talab qilinadi'));
   }
 
   try {
     const payload = verifyToken(token);
-    req.user = { id: payload.id, role: payload.role, name: payload.name };
+    req.user = {
+      id: payload.id,
+      role: payload.role,
+      name: payload.name,
+      position: payload.position,
+      avatar: payload.avatar,
+    };
     next();
   } catch (_err) {
     next(ApiError.unauthorized('Token yaroqsiz yoki muddati o‘tgan'));
@@ -32,10 +41,12 @@ function authenticate(req, _res, next) {
  * access logs.
  */
 function authenticateDownload(req, _res, next) {
-  const token = req.body && req.body.download_token;
+  const token =
+    (req.cookies && req.cookies.token) ||
+    (req.body && req.body.download_token);
 
   if (!token) {
-    return next(ApiError.unauthorized('Yuklab olish tokeni topilmadi'));
+    return next(ApiError.unauthorized('Yuklab olish uchun avtorizatsiya talab qilinadi'));
   }
 
   try {

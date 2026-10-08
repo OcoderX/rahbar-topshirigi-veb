@@ -147,7 +147,7 @@ const TaskModel = {
     );
     const total = countRows[0].total;
 
-    const safeLimit = Math.max(1, Math.min(Number(limit) || 10, 100));
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 10, 50000));
     const safePage = Math.max(1, Number(page) || 1);
     const offset = (safePage - 1) * safeLimit;
 

@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/Toast';
+import { MessageProvider } from './context/MessageContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import FacebookMessenger from './components/FacebookMessenger';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
@@ -26,38 +28,41 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <Routes>
-            <Route path="/" element={<RootRedirect />} />
-            <Route path="/login" element={<Login />} />
+          <MessageProvider>
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
+              <Routes>
+                <Route path="/" element={<RootRedirect />} />
+                <Route path="/login" element={<Login />} />
 
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute roles={['admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employee"
-              element={
-                <ProtectedRoute roles={['employee']}>
-                  <EmployeeDashboard />
-                </ProtectedRoute>
-              }
-            />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/employee"
+                  element={
+                    <ProtectedRoute roles={['employee']}>
+                      <EmployeeDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ToastProvider>
-    </AuthProvider>
-  </ThemeProvider>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+              <FacebookMessenger />
+            </BrowserRouter>
+          </MessageProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

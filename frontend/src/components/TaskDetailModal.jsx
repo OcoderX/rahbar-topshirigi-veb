@@ -5,6 +5,7 @@ import StatusBadge from './StatusBadge';
 import { taskApi } from '../api/endpoints';
 import { formatDateTime } from '../utils/date';
 import { useToast } from './Toast';
+import { useMessenger } from '../context/MessageContext';
 import { downloadAttachment } from '../utils/fileDownloader';
 import { triggerConfetti } from '../utils/confetti';
 import { openTaskReportPrintWindow, downloadTaskReportHtmlFile } from '../utils/reportExporter';
@@ -34,6 +35,7 @@ function getFileIcon(name = '', type = '') {
 
 export default function TaskDetailModal({ task: initialTask, isEmployee = false, onClose, onTaskUpdated }) {
   const { push } = useToast();
+  const { openChatWithUser } = useMessenger();
   const [task, setTask] = useState(initialTask);
   const [reportNote, setReportNote] = useState(initialTask?.completion_note || '');
   const [reportAudio, setReportAudio] = useState(initialTask?.completion_audio || '');
@@ -699,6 +701,34 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
         </div>
 
         <div className="modal-foot">
+          <button
+            type="button"
+            className="btn btn-inbox mr-auto"
+            onClick={() => {
+              onClose();
+              if (!isEmployee && task.assigned_to) {
+                openChatWithUser(
+                  {
+                    id: task.assigned_to,
+                    name: task.assignee_name,
+                    avatar: task.assignee_avatar,
+                    position: task.assignee_position,
+                    role: task.assignee_role,
+                    district: task.assignee_district,
+                  },
+                  { id: task.id, title: task.title }
+                );
+              } else {
+                openChatWithUser(
+                  { id: 1, name: 'Viloyat Rahbari', role: 'admin', position: 'Rahbar' },
+                  { id: task.id, title: task.title }
+                );
+              }
+            }}
+            title="Topshiriq yuzasidan xabar yoki ovozli ko‘rsatma yuborish"
+          >
+            💬 Xabar yozish (Inbox)
+          </button>
           <button className="btn" onClick={onClose}>
             Yopish
           </button>

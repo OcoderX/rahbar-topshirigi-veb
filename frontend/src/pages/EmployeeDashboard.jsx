@@ -10,6 +10,7 @@ import CommandPalette from '../components/CommandPalette';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
+import { useMessenger } from '../context/MessageContext';
 import { taskApi } from '../api/endpoints';
 import { formatDateTime, getRemainingTime } from '../utils/date';
 import { useCountUp } from '../utils/useCountUp';
@@ -19,6 +20,7 @@ const PAGE_SIZE = 20;
 export default function EmployeeDashboard() {
   const { user } = useAuth();
   const { push } = useToast();
+  const { openChatWithUser } = useMessenger();
 
   const [tasks, setTasks] = useState([]);
   const [total, setTotal] = useState(0);
@@ -390,6 +392,19 @@ export default function EmployeeDashboard() {
                             </div>
                           </td>
                           <td className="right">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-task-inbox mr-1"
+                              onClick={() =>
+                                openChatWithUser(
+                                  { id: 1, name: 'Viloyat Rahbari', role: 'admin', position: 'Rahbar' },
+                                  { id: t.id, title: t.title }
+                                )
+                              }
+                              title="Rahbarga ushbu topshiriq bo‘yicha xabar yoki savol yozish"
+                            >
+                              💬 Xabar
+                            </button>
                             {t.status === 'pending' ? (
                               <button
                                 className="btn btn-sm btn-primary"
@@ -490,6 +505,19 @@ export default function EmployeeDashboard() {
                         )}
                       </div>
                       <div className="task-card-actions">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-task-inbox mr-1"
+                          onClick={() =>
+                            openChatWithUser(
+                              { id: 1, name: 'Viloyat Rahbari', role: 'admin', position: 'Rahbar' },
+                              { id: t.id, title: t.title }
+                            )
+                          }
+                          title="Rahbarga ushbu topshiriq bo‘yicha xabar yoki savol yozish"
+                        >
+                          💬 Xabar
+                        </button>
                         {t.status === 'pending' ? (
                           <button
                             className="btn btn-sm btn-primary btn-card-action"

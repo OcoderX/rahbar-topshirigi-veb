@@ -51,3 +51,15 @@ export const taskApi = {
 export const activityApi = {
   list: (limit) => client.get(`/activity-logs${qs({ limit })}`).then((r) => r.data.data),
 };
+
+export const messageApi = {
+  send: (payload) => client.post('/messages', payload).then((r) => r.data.data),
+  inbox: () => client.get('/messages/inbox').then((r) => r.data.data),
+  conversation: (userId) => client.get(`/messages/conversation/${userId}`).then((r) => r.data.data),
+  unreadCount: () => client.get('/messages/unread-count').then((r) => r.data.count),
+  markRead: (userId) => client.post(`/messages/read/${userId}`).then((r) => r.data),
+  taskMessages: (taskId) => client.get(`/messages/task/${taskId}`).then((r) => r.data.data),
+  edit: (id, payload) => client.put(`/messages/${id}`, payload).then((r) => r.data.data),
+  history: (id) => client.get(`/messages/${id}/history`).then((r) => r.data.data),
+};
+

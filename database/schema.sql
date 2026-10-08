@@ -13,6 +13,7 @@ CREATE DATABASE IF NOT EXISTS task_tracker
 USE task_tracker;
 
 -- Drop in dependency order so the script is re-runnable.
+DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS activity_logs;
 DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS users;
@@ -93,4 +94,58 @@ CREATE TABLE activity_logs (
     ON DELETE SET NULL
     ON UPDATE CASCADE,
   INDEX idx_logs_created_at (created_at)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- messages (Direct & Task Messaging / Inbox)
+-- ---------------------------------------------------------------------
+CREATE TABLE messages (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  sender_id   INT          NOT NULL,
+  receiver_id INT          NOT NULL,
+  task_id     INT          NULL,
+  message     TEXT         NULL,
+  audio_url   VARCHAR(500) NULL,
+  is_read     BOOLEAN      NOT NULL DEFAULT FALSE,
+  read_at     DATETIME     NULL,
+  is_edited   BOOLEAN      NOT NULL DEFAULT FALSE,
+  edited_at   DATETIME     NULL,
+  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_messages_sender
+    FOREIGN KEY (sender_id) REFERENCES users(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_messages_receiver
+    FOREIGN KEY (receiver_id) REFERENCES users(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_messages_task
+    FOREIGN KEY (task_id) REFERENCES tasks(id)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  INDEX idx_messages_sender (sender_id),
+  INDEX idx_messages_receiver (receiver_id),
+  INDEX idx_messages_task (task_id),
+  INDEX idx_messages_created (created_at)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- message_edits (Message edit history / versions)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS message_edits (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  message_id  INT          NOT NULL,
+  old_message TEXT         NOT NULL,
+  new_message TEXT         NOT NULL,
+  edited_by   INT          NOT NULL,
+  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_edits_message
+    FOREIGN KEY (message_id) REFERENCES messages(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_edits_user
+    FOREIGN KEY (edited_by) REFERENCES users(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  INDEX idx_edits_message (message_id)
 ) ENGINE=InnoDB;

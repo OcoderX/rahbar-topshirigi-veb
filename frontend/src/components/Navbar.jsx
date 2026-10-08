@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useMessenger } from '../context/MessageContext';
 import ProfileModal from './ProfileModal';
 
 export default function Navbar({ onOpenSidebar, onOpenCommandPalette, onProfileUpdated }) {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { unreadCount, toggleMessenger } = useMessenger();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -66,6 +68,34 @@ export default function Navbar({ onOpenSidebar, onOpenCommandPalette, onProfileU
 
           {user && (
             <div className="nav-user">
+              {/* Facebook-like Inbox / Messenger trigger */}
+              <button
+                type="button"
+                className="btn-nav-messenger"
+                onClick={toggleMessenger}
+                title={`Xabarlar (Inbox)${unreadCount > 0 ? ` — ${unreadCount} ta yangi xabar` : ''}`}
+                aria-label="Xabarlar qutisi"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 28 28"
+                  fill="currentColor"
+                  style={{ color: unreadCount > 0 ? '#0084ff' : 'inherit' }}
+                >
+                  <path d="M14 2.333C7.556 2.333 2.333 7.158 2.333 13.111c0 3.393 1.692 6.425 4.34 8.35v4.206l3.966-2.18c1.074.298 2.205.457 3.361.457 6.444 0 11.667-4.825 11.667-10.778 0-5.953-5.223-10.833-11.667-10.833z" />
+                  <path
+                    d="M15.4 16.567l-2.917-3.115-5.694 3.115 6.265-6.65 2.987 3.115 5.624-3.115-6.265 6.65z"
+                    fill="#ffffff"
+                  />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="btn-nav-messenger-badge">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
               {/* Theme toggle switch */}
               <button
                 type="button"

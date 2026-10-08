@@ -10,6 +10,7 @@ import KanbanBoard from '../components/KanbanBoard';
 import CommandPalette from '../components/CommandPalette';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/Toast';
+import { useMessenger } from '../context/MessageContext';
 import { taskApi, userApi } from '../api/endpoints';
 import { formatDateTime, getRemainingTime } from '../utils/date';
 import { useCountUp } from '../utils/useCountUp';
@@ -19,6 +20,7 @@ const PAGE_SIZE = 20;
 
 export default function AdminDashboard() {
   const { push } = useToast();
+  const { openChatWithUser, openCompose } = useMessenger();
 
   const [employees, setEmployees] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -379,6 +381,14 @@ export default function AdminDashboard() {
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               <span>{exporting ? 'Tayyorlanmoqda…' : 'Hisobot (.xlsx)'}</span>
+            </button>
+            <button
+              id="btn-top-compose-message"
+              className="btn btn-top-message"
+              onClick={() => openCompose()}
+              title="Xodimni tanlab xabar yoki ovozli ko‘rsatma yuborish"
+            >
+              ✉️ Xabar yuborish
             </button>
             <button id="btn-create-task" className="btn btn-primary" onClick={openCreate}>
               + Yangi vazifa
@@ -1014,6 +1024,28 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="right">
+                          {t.assigned_to && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-task-inbox mr-1"
+                              onClick={() =>
+                                openChatWithUser(
+                                  {
+                                    id: t.assigned_to,
+                                    name: t.assignee_name,
+                                    position: t.assignee_position,
+                                    avatar: t.assignee_avatar,
+                                    role: t.assignee_role,
+                                    district: t.assignee_district,
+                                  },
+                                  { id: t.id, title: t.title }
+                                )
+                              }
+                              title={`${t.assignee_name || 'Xodim'}ga ushbu vazifa bo‘yicha xabar yozish`}
+                            >
+                              💬 Xabar
+                            </button>
+                          )}
                           {t.status === 'submitted' ? (
                             <button className="btn btn-sm btn-warning mr-1" onClick={() => setDetailTask(t)} title="Xodim hisobot topshirdi — tasdiqlash uchun bosing">
                               ⏳ Tasdiqlash
@@ -1142,6 +1174,28 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     <div className="task-card-actions">
+                      {t.assigned_to && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-task-inbox mr-1"
+                          onClick={() =>
+                            openChatWithUser(
+                              {
+                                id: t.assigned_to,
+                                name: t.assignee_name,
+                                position: t.assignee_position,
+                                avatar: t.assignee_avatar,
+                                role: t.assignee_role,
+                                district: t.assignee_district,
+                              },
+                              { id: t.id, title: t.title }
+                            )
+                          }
+                          title={`${t.assignee_name || 'Xodim'}ga xabar yozish`}
+                        >
+                          💬 Xabar
+                        </button>
+                      )}
                       {t.status === 'submitted' ? (
                         <button className="btn btn-sm btn-warning mr-1" onClick={() => setDetailTask(t)} title="Hisobotni ko‘rish va tasdiqlash">
                           ⏳ Tasdiqlash

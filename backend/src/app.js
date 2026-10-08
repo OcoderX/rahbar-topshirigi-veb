@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const taskRoutes = require('./routes/task.routes');
 const activityLogRoutes = require('./routes/activityLog.routes');
+const messageRoutes = require('./routes/message.routes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/tasks', taskRoutes);
 app.use('/activity-logs', activityLogRoutes);
+app.use('/messages', messageRoutes);
 
 // 404 + central error handler (must be last).
 app.use(notFoundHandler);

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import StatusBadge, { getTaskStatusClass } from './StatusBadge';
 import { userApi } from '../api/endpoints';
 import { formatDateTime, getRemainingTime } from '../utils/date';
+import { useMessenger } from '../context/MessageContext';
 
 /**
  * Facebook / LinkedIn-style Executive User Account Profile Modal.
@@ -19,6 +20,7 @@ export default function UserAccountModal({
   onAssignTask,
   onOpenTaskDetail,
 }) {
+  const { openChatWithUser } = useMessenger();
   const [profile, setProfile] = useState(user || null);
   const [tasks, setTasks] = useState([]);
   const [statusCounts, setStatusCounts] = useState(
@@ -703,6 +705,25 @@ export default function UserAccountModal({
           <div className="foot-actions">
             <button className="btn" onClick={onClose}>
               Yopish
+            </button>
+            <button
+              type="button"
+              className="btn btn-inbox"
+              onClick={() => {
+                onClose();
+                openChatWithUser({
+                  id: userId,
+                  name: displayName,
+                  email: displayEmail,
+                  position: displayPosition,
+                  avatar: displayAvatar,
+                  role: displayRole,
+                  district: displayDistrict,
+                });
+              }}
+              title={`${displayName} ga to‘g‘ridan-to‘g‘ri xabar yoki ovozli ko‘rsatma yuborish`}
+            >
+              💬 Xabar yozish
             </button>
             {displayRole !== 'admin' && onAssignTask && (
               <button

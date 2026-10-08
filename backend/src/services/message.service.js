@@ -11,14 +11,16 @@ const MessageService = {
   /**
    * Send a direct message or voice message to another user.
    */
-  async sendMessage({ senderId, receiverId, taskId, message, audioUrl }) {
-    if (!receiverId) {
-      throw ApiError.badRequest('Xabar oluvchi foydalanuvchi ko‘rsatilmadi');
+  async sendMessage({ senderId, receiverId, receiverIds, taskId, message, audioUrl }) {
+    let targetIds = [];
+    if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+      targetIds = receiverIds.map(Number).filter((id) => id && id !== senderId);
+    } else if (receiverId) {
+      targetIds = [Number(receiverId)].filter((id) => id && id !== senderId);
     }
 
-    const receiver = await UserModel.findById(receiverId);
-    if (!receiver) {
-      throw ApiError.notFound('Xabar yuborilayotgan foydalanuvchi topilmadi');
+    if (targetIds.length === 0) {
+      throw ApiError.badRequest('Xabar oluvchi foydalanuvchi ko‘rsatilmadi');
     }
 
     const trimmedMsg = typeof message === 'string' ? message.trim() : '';
@@ -29,7 +31,7 @@ const MessageService = {
 
     let finalAudioUrl = audioUrl || null;
 
-    // If audio is base64 data URL, save it through the attachment pipeline
+    // If audio is base64 data URL, save it once through the attachment pipeline
     if (audioUrl && typeof audioUrl === 'string' && audioUrl.startsWith('data:audio')) {
       try {
         const saved = await TaskService.saveAttachment({
@@ -44,24 +46,61 @@ const MessageService = {
       }
     }
 
-    const created = await MessageModel.create({
-      senderId,
-      receiverId: Number(receiverId),
-      taskId: taskId ? Number(taskId) : null,
-      message: trimmedMsg || null,
-      audioUrl: finalAudioUrl,
-    });
+    if (targetIds.length === 1 && !Array.isArray(receiverIds)) {
+      const recId = targetIds[0];
+      const receiver = await UserModel.findById(recId);
+      if (!receiver) {
+        throw ApiError.notFound('Xabar yuborilayotgan foydalanuvchi topilmadi');
+      }
 
-    // Audit log
+      const created = await MessageModel.create({
+        senderId,
+        receiverId: recId,
+        taskId: taskId ? Number(taskId) : null,
+        message: trimmedMsg || null,
+        audioUrl: finalAudioUrl,
+      });
+
+      await ActivityLogModel.create({
+        userId: senderId,
+        action: 'SEND_MESSAGE',
+        entity: 'message',
+        entityId: created.id,
+        details: `Sent message to ${receiver.name} (ID: ${receiver.id})${taskId ? ` regarding Task #${taskId}` : ''}`,
+      }).catch(() => {});
+
+      return created;
+    }
+
+    // Multiple recipients
+    const createdList = [];
+    for (const recId of targetIds) {
+      try {
+        const created = await MessageModel.create({
+          senderId,
+          receiverId: recId,
+          taskId: taskId ? Number(taskId) : null,
+          message: trimmedMsg || null,
+          audioUrl: finalAudioUrl,
+        });
+        createdList.push(created);
+      } catch (err) {
+        console.error(`Failed to send message to user ${recId}:`, err.message);
+      }
+    }
+
     await ActivityLogModel.create({
       userId: senderId,
-      action: 'SEND_MESSAGE',
+      action: 'SEND_BULK_MESSAGE',
       entity: 'message',
-      entityId: created.id,
-      details: `Sent message to ${receiver.name} (ID: ${receiver.id})${taskId ? ` regarding Task #${taskId}` : ''}`,
+      entityId: createdList[0]?.id || 0,
+      details: `Sent bulk message to ${createdList.length} users${taskId ? ` regarding Task #${taskId}` : ''}`,
     }).catch(() => {});
 
-    return created;
+    return {
+      count: createdList.length,
+      messages: createdList,
+    };
   },
 
   /**

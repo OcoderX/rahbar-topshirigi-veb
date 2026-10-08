@@ -208,7 +208,7 @@ export default function TaskDetailModal({ task: initialTask, isEmployee = false,
   const completionDocs = completionAtts.filter((a) => !completionImages.includes(a) && !completionVideos.includes(a));
 
   return (
-    <div className="overlay task-detail-overlay" onMouseDown={onClose}>
+    <div className="overlay task-detail-overlay" style={{ zIndex: 1200 }} onMouseDown={onClose}>
       <div className="modal task-detail-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>

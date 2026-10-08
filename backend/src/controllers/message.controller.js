@@ -6,10 +6,11 @@ const MessageService = require('../services/message.service');
 const MessageController = {
   // POST /messages
   async send(req, res) {
-    const { receiver_id, task_id, message, audio_url } = req.body;
+    const { receiver_id, receiver_ids, task_id, message, audio_url } = req.body;
     const result = await MessageService.sendMessage({
       senderId: req.user.id,
       receiverId: receiver_id,
+      receiverIds: receiver_ids,
       taskId: task_id,
       message,
       audioUrl: audio_url,

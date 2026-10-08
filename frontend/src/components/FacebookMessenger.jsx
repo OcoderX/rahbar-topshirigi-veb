@@ -475,18 +475,35 @@ export default function FacebookMessenger() {
                           )}
 
                           <div className="fb-msg-bubble-wrap">
-                            {/* Attached task chip if present — Clickable to open Task Modal */}
+                            {/* Attached task chip if present — Clickable to open Task Modal or Reply */}
                             {m.task_title && (
-                              <div
-                                className="fb-msg-task-chip clickable-task-chip"
-                                onClick={() => handleOpenTaskModal(m.task_id)}
-                                title="Topshiriq oynasini ochish uchun bosing"
-                              >
-                                <span className="chip-pin">📌</span>
-                                <span className="chip-text">
-                                  Topshiriq: <strong>{m.task_title}</strong>
-                                </span>
-                                <span className="chip-open-arrow">↗</span>
+                              <div className="fb-msg-task-chip clickable-task-chip">
+                                <div
+                                  className="chip-main"
+                                  onClick={() => handleOpenTaskModal(m.task_id)}
+                                  title="Topshiriq ma‘lumotlarini ochish uchun bosing"
+                                >
+                                  <span className="chip-pin">📌</span>
+                                  <div className="chip-body">
+                                    <span className="chip-label">Topshiriq</span>
+                                    <span className="chip-title" title={m.task_title}>
+                                      {m.task_title}
+                                    </span>
+                                  </div>
+                                  <span className="chip-open-badge">Ochish ↗</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="chip-btn-reply"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveTask({ id: m.task_id, title: m.task_title });
+                                    inputRef.current?.focus();
+                                  }}
+                                  title="Ushbu topshiriqqa javob yozish (Reply)"
+                                >
+                                  ↩ Javob
+                                </button>
                               </div>
                             )}
 
@@ -618,6 +635,34 @@ export default function FacebookMessenger() {
                   </div>
                 )}
 
+                {/* Active task reply banner if present */}
+                {activeTask && !editingMessage && (
+                  <div className="fb-composer-reply-bar">
+                    <div
+                      className="fb-reply-bar-main"
+                      onClick={() => handleOpenTaskModal(activeTask.id)}
+                      title="Ushbu topshiriqni ko‘rish uchun bosing"
+                    >
+                      <span className="fb-reply-bar-icon">📌</span>
+                      <div className="fb-reply-bar-content">
+                        <span className="fb-reply-bar-label">Topshiriqqa javob (Reply):</span>
+                        <strong className="fb-reply-bar-title" title={activeTask.title}>
+                          {activeTask.title}
+                        </strong>
+                      </div>
+                      <span className="fb-reply-bar-peek">Ko‘rish ↗</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="fb-reply-bar-clear"
+                      onClick={() => setActiveTask(null)}
+                      title="Topshiriq bog‘lanishini bekor qilish"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 {/* Chat composer input */}
                 <form onSubmit={handleSendMessage} className="fb-chat-composer">
                   {!editingMessage && (
@@ -640,7 +685,9 @@ export default function FacebookMessenger() {
                         ? 'Yangi matnni kiriting...'
                         : recordingAudio
                           ? 'Ovoz tayyor. Qo‘shimcha matn (ixtiyoriy)...'
-                          : 'Xabar yozing...'
+                          : activeTask
+                            ? `"${activeTask.title.slice(0, 26)}..." bo‘yicha javob yozing...`
+                            : 'Xabar yozing...'
                     }
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
@@ -700,7 +747,14 @@ export default function FacebookMessenger() {
                         <div
                           key={c.id}
                           className={`fb-conv-row ${hasUnread ? 'unread' : ''}`}
-                          onClick={() => selectConversation(c)}
+                          onClick={() =>
+                            selectConversation(
+                              c,
+                              c.last_task_id && c.last_task_title
+                                ? { id: c.last_task_id, title: c.last_task_title }
+                                : null
+                            )
+                          }
                         >
                           <div className="fb-conv-avatar">
                             {c.avatar ? (
@@ -732,6 +786,16 @@ export default function FacebookMessenger() {
                                 </span>
                               )}
                             </div>
+
+                            {c.last_task_title && (
+                              <div
+                                className="fb-conv-task-chip-preview"
+                                title={`Topshiriq: ${c.last_task_title}`}
+                              >
+                                <span className="chip-mini-pin">📌</span>
+                                <span className="chip-mini-text">{c.last_task_title}</span>
+                              </div>
+                            )}
 
                             <div className="fb-conv-pos-tag">
                               {c.position || (c.role === 'admin' ? 'Rahbar' : 'Xodim')}
